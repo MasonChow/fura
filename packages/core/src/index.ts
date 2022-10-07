@@ -1,15 +1,16 @@
 // import parser from '@fura/parser';
 import fs from 'fs';
 import path from 'path';
+import lodash from 'lodash';
 import { formatFileSize } from './utils';
-
-const basePath = process.cwd();
 
 export interface Config {
   // 入口文件路径 index.ts / index.js / index.tsx / index.jsx
   // root: string;
   // 执行分析目录
   targetDir: string;
+  // 分析入口目录 默认 .
+  rootPath?: string;
 }
 
 /**
@@ -25,7 +26,9 @@ export function getDirFilesMap(rootDir: string): Map<
     // 文件id
     id: string;
     // 父级路径
-    parentPath: string;
+    parentPath: null | string;
+    // 父级是否根目录
+    isRootParent: boolean;
     // 格式化后文件大小 *B/*KB/*MB/*GB/*TB
     fileSize: string;
     // 文件大小 单位byte
@@ -48,6 +51,7 @@ export function getDirFilesMap(rootDir: string): Map<
           path: pathname,
           fileName: file,
           parentPath: dir,
+          isRootParent: dir === rootDir,
           fileSize: formatFileSize(fileStat.size),
           size: fileStat.size,
         });
@@ -61,13 +65,22 @@ export function getDirFilesMap(rootDir: string): Map<
 }
 
 function main(config: Config) {
-  const targetDir = path.join(basePath, config.targetDir);
+  let targetDir = config.targetDir;
+
+  if (config.rootPath) {
+    targetDir = path.join(config.rootPath || '.', config.targetDir);
+  }
+
   const targetDirFilesMap = getDirFilesMap(targetDir);
-  console.log(targetDirFilesMap);
+
+  fs.writeFileSync(
+    './core.json',
+    JSON.stringify(Object.fromEntries(targetDirFilesMap)),
+  );
 }
 
 main({
-  targetDir: 'packages/core',
+  targetDir: '/Users/zhoushunming/Documents/sc/shopline-post-center/src',
 });
 
 export default main;
