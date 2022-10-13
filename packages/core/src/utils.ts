@@ -1,3 +1,7 @@
+import fs from 'fs';
+import path from 'path';
+import * as types from './typing';
+
 /**
  * 是否js类型的文件
  * 规则
@@ -31,4 +35,37 @@ export function formatFileSize(size: number): string {
     return (size / Math.pow(base, 3)).toFixed(2) + 'GB';
   }
   return (size / Math.pow(base, 4)).toFixed(2) + 'TB';
+}
+
+/**
+ * 获取目标目录下所有文件的Map
+ */
+export function getDirFilesMap(rootDir: string) {
+  const filesMap: Map<string, types.DirFilesType> = new Map();
+
+  function reader(dir: string) {
+    fs.readdirSync(dir).forEach((file) => {
+      const pathname = path.join(dir, file);
+      const fileStat = fs.statSync(pathname);
+
+      // 如果是文件夹则继续递归
+      if (fileStat.isDirectory()) {
+        reader(pathname);
+      } else {
+        filesMap.set(pathname, {
+          id: pathname,
+          path: pathname,
+          fileName: file,
+          parentPath: dir,
+          isRootParent: dir === rootDir,
+          fileSize: formatFileSize(fileStat.size),
+          size: fileStat.size,
+        });
+      }
+    });
+  }
+
+  reader(rootDir);
+
+  return filesMap;
 }

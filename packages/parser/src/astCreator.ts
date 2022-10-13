@@ -1,43 +1,28 @@
 // ast构造器
-import * as swc from '@swc/core';
-import { AST } from './typing';
+import * as parser from '@babel/parser';
+import fs from 'fs';
 
-// 来源内容
-export interface Source {
-  // 内容
-  content?: string;
-  // 文件路径
-  filePath?: string;
-}
+import { TranslatorSource } from './typing';
 
-const config = {
-  // js文件都可以通过这样获取到ast，保障兼容
-  syntax: 'typescript',
-  tsx: true,
-  dynamicImport: true,
-} as const;
+const config: parser.ParserOptions = {
+  sourceType: 'module',
+  plugins: ['dynamicImport', 'jsx', 'typescript'],
+};
 
 // 同步方式
-export function parseAsync(source: Source): AST {
-  if (source.content !== undefined) {
-    return swc.parseSync(source.content, config);
-  }
-
-  if (source.filePath !== undefined) {
-    return swc.parseFileSync(source.filePath, config);
-  }
-
-  throw new Error('需要传入content或者filePath');
+export function parseContent(content: string) {
+  return parser.parse(content, config);
 }
 
 // 异步方式
-export function parse(source: Source): Promise<AST> {
+export function parseAsync(source: TranslatorSource) {
   if (source.content !== undefined) {
-    return swc.parse(source.content, config);
+    return parseContent(source.content);
   }
 
   if (source.filePath !== undefined) {
-    return swc.parseFile(source.filePath, config);
+    const content = fs.readFileSync(source.filePath).toString();
+    return parseContent(content);
   }
 
   throw new Error('需要传入content或者filePath');

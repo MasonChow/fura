@@ -1,7 +1,5 @@
-import { parseAsync } from './astCreator';
+export { default as Translator } from './translator';
 
-const res = parseAsync({
-  filePath: `/Users/zhoushunming/Documents/mason/fura/packages/core/src/utils.ts`,
-});
+export * from './astCreator';
 
-console.log(res);
+export * as types from './typing';

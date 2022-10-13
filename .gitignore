@@ -5,3 +5,5 @@
 /dev
 /packages/*/dist
 /coverage
+/debug
+/.fura

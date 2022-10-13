@@ -1,8 +1,6 @@
-// import parser from '@fura/parser';
-import fs from 'fs';
 import path from 'path';
-import lodash from 'lodash';
-import { formatFileSize } from './utils';
+import * as utils from './utils';
+import AnalysisJS from './analysis/js';
 
 export interface Config {
   // 入口文件路径 index.ts / index.js / index.tsx / index.jsx
@@ -11,57 +9,11 @@ export interface Config {
   targetDir: string;
   // 分析入口目录 默认 .
   rootPath?: string;
-}
-
-/**
- * 获取目标目录下所有文件的Map
- */
-export function getDirFilesMap(rootDir: string): Map<
-  string,
-  {
-    // 文件名
-    fileName: string;
-    // 文件路径
-    path: string;
-    // 文件id
-    id: string;
-    // 父级路径
-    parentPath: null | string;
-    // 父级是否根目录
-    isRootParent: boolean;
-    // 格式化后文件大小 *B/*KB/*MB/*GB/*TB
-    fileSize: string;
-    // 文件大小 单位byte
-    size: number;
-  }
-> {
-  const filesMap: ReturnType<typeof getDirFilesMap> = new Map();
-
-  function reader(dir: string) {
-    fs.readdirSync(dir).forEach((file) => {
-      const pathname = path.join(dir, file);
-      const fileStat = fs.statSync(pathname);
-
-      // 如果是文件夹则继续递归
-      if (fileStat.isDirectory()) {
-        reader(pathname);
-      } else {
-        filesMap.set(pathname, {
-          id: pathname,
-          path: pathname,
-          fileName: file,
-          parentPath: dir,
-          isRootParent: dir === rootDir,
-          fileSize: formatFileSize(fileStat.size),
-          size: fileStat.size,
-        });
-      }
-    });
-  }
-
-  reader(rootDir);
-
-  return filesMap;
+  // 配置项
+  options?: {
+    // 路径别名 例如 {'@/*': 'src/*'}
+    alias?: Record<string, string>;
+  };
 }
 
 function main(config: Config) {
@@ -70,17 +22,29 @@ function main(config: Config) {
   if (config.rootPath) {
     targetDir = path.join(config.rootPath || '.', config.targetDir);
   }
+  // 目标文件map
+  const targetDirFilesMap = utils.getDirFilesMap(targetDir);
 
-  const targetDirFilesMap = getDirFilesMap(targetDir);
+  const analysisJS = new AnalysisJS();
 
-  fs.writeFileSync(
-    './core.json',
-    JSON.stringify(Object.fromEntries(targetDirFilesMap)),
-  );
+  [...targetDirFilesMap.keys()].forEach((key) => {
+    // 解析JS
+    if (utils.isJsTypeFile(key)) {
+      const file = targetDirFilesMap.get(key)!;
+      analysisJS.analysis(file, config.options);
+    }
+  });
+
+  console.log(analysisJS.analysisResultData);
 }
 
 main({
   targetDir: '/Users/zhoushunming/Documents/sc/shopline-post-center/src',
+  options: {
+    alias: {
+      '@': './',
+    },
+  },
 });
 
 export default main;
