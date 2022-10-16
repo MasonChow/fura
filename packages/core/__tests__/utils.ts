@@ -1,5 +1,9 @@
 import { describe, expect, test } from '@jest/globals';
-import { isJsTypeFile, formatFileSize } from '../src/utils';
+import {
+  isJsTypeFile,
+  formatFileSize,
+  createDirIndexFilePaths,
+} from '../src/utils';
 
 describe('执行测试 isJsTypeFile 函数', () => {
   test('*.ts/tsx/js/jsx的后缀文件检查为true', () => {
@@ -24,6 +28,37 @@ describe('执行测试 isJsTypeFile 函数', () => {
     expect(isJsTypeFile('test.html')).toBe(false);
     expect(isJsTypeFile('test.png')).toBe(false);
     expect(isJsTypeFile('test.jpeg')).toBe(false);
+  });
+});
+
+describe('执行测试 createDirIndexFilePaths 函数', () => {
+  const a = './src';
+  const b = '.';
+  const c = '..';
+
+  test(a, () => {
+    expect(createDirIndexFilePaths(a)).toContain(`${a}/index.ts`);
+    expect(createDirIndexFilePaths(a)).toContain(`${a}/index.tsx`);
+    expect(createDirIndexFilePaths(a)).toContain(`${a}/index.js`);
+    expect(createDirIndexFilePaths(a)).toContain(`${a}/index.jsx`);
+    expect(createDirIndexFilePaths(a)).toContain(`${a}.ts`);
+    expect(createDirIndexFilePaths(a)).toContain(`${a}.tsx`);
+    expect(createDirIndexFilePaths(a)).toContain(`${a}.js`);
+    expect(createDirIndexFilePaths(a)).toContain(`${a}.jsx`);
+  });
+
+  test(b, () => {
+    expect(createDirIndexFilePaths(b)).toContain(`${b}/index.ts`);
+    expect(createDirIndexFilePaths(b)).toContain(`${b}/index.tsx`);
+    expect(createDirIndexFilePaths(b)).toContain(`${b}/index.js`);
+    expect(createDirIndexFilePaths(b)).toContain(`${b}/index.jsx`);
+  });
+
+  test(c, () => {
+    expect(createDirIndexFilePaths(c)).toContain(`${c}/index.ts`);
+    expect(createDirIndexFilePaths(c)).toContain(`${c}/index.tsx`);
+    expect(createDirIndexFilePaths(c)).toContain(`${c}/index.js`);
+    expect(createDirIndexFilePaths(c)).toContain(`${c}/index.jsx`);
   });
 });
 

@@ -1,7 +1,8 @@
 import path from 'path';
 import * as utils from './utils';
 import AnalysisJS from './analysis/js';
-
+import fs from 'fs';
+import child_process from 'child_process';
 export interface Config {
   // 入口文件路径 index.ts / index.js / index.tsx / index.jsx
   // root: string;
@@ -13,6 +14,8 @@ export interface Config {
   options?: {
     // 路径别名 例如 {'@/*': 'src/*'}
     alias?: Record<string, string>;
+    // 忽略查询的目录
+    exclude?: string[];
   };
 }
 
@@ -22,29 +25,11 @@ function main(config: Config) {
   if (config.rootPath) {
     targetDir = path.join(config.rootPath || '.', config.targetDir);
   }
-  // 目标文件map
-  const targetDirFilesMap = utils.getDirFilesMap(targetDir);
 
-  const analysisJS = new AnalysisJS();
+  // 分析js引用
+  const analysisJS = new AnalysisJS(targetDir, config.options);
 
-  [...targetDirFilesMap.keys()].forEach((key) => {
-    // 解析JS
-    if (utils.isJsTypeFile(key)) {
-      const file = targetDirFilesMap.get(key)!;
-      analysisJS.analysis(file, config.options);
-    }
-  });
-
-  console.log(analysisJS.analysisResultData);
+  return analysisJS;
 }
-
-main({
-  targetDir: '/Users/zhoushunming/Documents/sc/shopline-post-center/src',
-  options: {
-    alias: {
-      '@': './',
-    },
-  },
-});
 
 export default main;

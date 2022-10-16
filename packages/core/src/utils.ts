@@ -2,9 +2,12 @@ import fs from 'fs';
 import path from 'path';
 import * as types from './typing';
 
+// js文件后缀类型
+export const jsFileSuffix = ['js', 'jsx', 'ts', 'tsx'] as const;
+
 /**
  * 是否js类型的文件
- * 规则
+ *
  * 1. 文件名js/jsx/ts/tsx结尾
  * 2. 非*.d.ts文件
  */
@@ -13,7 +16,24 @@ export function isJsTypeFile(fileName: string): boolean {
     return false;
   }
 
-  return /.(jsx|tsx|js|ts)$/.test(fileName);
+  const testJsFileReg = new RegExp(`.(${jsFileSuffix.join('|')})$`);
+
+  return testJsFileReg.test(fileName);
+}
+
+/**
+ * 创建匹配index的文件路径
+ *
+ * 1. xxx/App -> xxx/App.(ts|js|tsx|jsx)
+ * 2. xxx/App -> xxx/App/index.(ts|js|tsx|jsx)
+ */
+export function createDirIndexFilePaths(filePath: string) {
+  return [
+    // xxx/App -> xxx/App.(ts|js|tsx|jsx)
+    ...jsFileSuffix.map((suffix) => `${filePath}.${suffix}`),
+    // xxx/App -> xxx/App/index.(ts|js|tsx|jsx)
+    ...jsFileSuffix.map((suffix) => `${filePath}/index.${suffix}`),
+  ];
 }
 
 /**
@@ -40,32 +60,88 @@ export function formatFileSize(size: number): string {
 /**
  * 获取目标目录下所有文件的Map
  */
-export function getDirFilesMap(rootDir: string) {
+export function getDirFiles(rootDir: string, exclude?: string[]) {
   const filesMap: Map<string, types.DirFilesType> = new Map();
+  const dirMap: Map<string, types.DirType> = new Map();
+
+  function addDirUsageInfo(dirPath: string, addSize: number) {
+    const dir = dirMap.get(dirPath);
+
+    if (!dir) {
+      return;
+    }
+
+    dir.fileCount += 1;
+    dir.totalSize += addSize;
+    dir.totalFormatSize = formatFileSize(dir.totalSize);
+    dirMap.set(dirPath, dir);
+
+    if (dir.parentPath) {
+      addDirUsageInfo(dir.parentPath, addSize);
+    }
+  }
 
   function reader(dir: string) {
-    fs.readdirSync(dir).forEach((file) => {
-      const pathname = path.join(dir, file);
+    const fileTree: types.DirFilesTree = {
+      id: dir,
+      name: dir.split('/').reverse()[0],
+      path: dir,
+      type: 'dir',
+      children: [],
+    };
+    fs.readdirSync(dir).forEach((name) => {
+      const pathname = path.join(dir, name);
       const fileStat = fs.statSync(pathname);
+      const baseInfo = {
+        id: pathname,
+        path: pathname,
+        name,
+      } as const;
+
+      const parentInfo = {
+        isRootParent: dir === rootDir,
+        parentPath: dir,
+      };
+      // 不解析排除的文件夹
+      if (exclude?.includes(name)) {
+        return;
+      }
 
       // 如果是文件夹则继续递归
       if (fileStat.isDirectory()) {
-        reader(pathname);
+        dirMap.set(pathname, {
+          ...baseInfo,
+          ...parentInfo,
+          dirName: name,
+          totalSize: 0,
+          fileCount: 0,
+          totalFormatSize: formatFileSize(0),
+        });
+
+        fileTree.children?.push(reader(pathname));
       } else {
         filesMap.set(pathname, {
-          id: pathname,
-          path: pathname,
-          fileName: file,
-          parentPath: dir,
-          isRootParent: dir === rootDir,
-          fileSize: formatFileSize(fileStat.size),
-          size: fileStat.size,
+          ...baseInfo,
+          ...parentInfo,
+          fileName: name,
+          fileFormatSize: formatFileSize(fileStat.size),
+          fileSize: fileStat.size,
+        });
+
+        addDirUsageInfo(dir, fileStat.size);
+
+        fileTree.children?.push({
+          ...baseInfo,
+          type: 'file',
         });
       }
     });
+
+    return fileTree;
   }
 
-  reader(rootDir);
+  const dirTree: types.DirFilesTree = reader(rootDir);
+  const files: string[] = [...filesMap.keys()];
 
-  return filesMap;
+  return { filesMap, dirMap, dirTree, files };
 }

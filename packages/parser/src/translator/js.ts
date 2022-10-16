@@ -1,30 +1,12 @@
+// TODO import modules 解析
+
 import * as t from '@babel/types';
 import traverse from '@babel/traverse';
 import { AST, TranslatorOptions } from '../typing';
+import * as utils from '../utils';
 
-export function translatorImports(ast: AST, option?: TranslatorOptions) {
-  const aliasMap = new Map<RegExp, string>();
-
-  if (option?.alias) {
-    Object.entries(option.alias).forEach(([key, value]) => {
-      const reg = new RegExp(`^${key}\/+`);
-      aliasMap.set(reg, value);
-    });
-  }
-
-  const aliasRegArr = [...aliasMap.keys()];
-
-  function replaceAlias(sourcePath: string) {
-    for (let i = 0; i < aliasRegArr.length; i++) {
-      const reg = aliasRegArr[i];
-
-      if (reg.test(sourcePath) && aliasMap.get(reg) !== undefined) {
-        return sourcePath.replace(reg, aliasMap.get(reg)!);
-      }
-    }
-
-    return sourcePath;
-  }
+export function translatorImports(ast: AST, option: TranslatorOptions = {}) {
+  const { alias = {} } = option;
 
   const result: Array<{
     // 动态引入 | 普通引入
@@ -34,17 +16,17 @@ export function translatorImports(ast: AST, option?: TranslatorOptions) {
   }> = [];
 
   traverse(ast, {
-    // 获取导入内容
+    // 获取导入内容 import * from 'xxx'
     ImportDeclaration(path) {
       const modules: string[] = [];
 
       result.push({
         type: 'import',
         modules,
-        sourcePath: replaceAlias(path.node.source.value),
+        sourcePath: utils.transformAliasPath(path.node.source.value, alias),
       });
     },
-    // 获取动态导入内容
+    // 获取动态导入内容 import('xxx')
     CallExpression(path) {
       if (path.node.callee.type === 'Import') {
         const node = path.node.arguments[0];
@@ -52,9 +34,21 @@ export function translatorImports(ast: AST, option?: TranslatorOptions) {
         if (t.isStringLiteral(node)) {
           result.push({
             type: 'dynamicImport',
-            sourcePath: replaceAlias(node.value),
+            sourcePath: utils.transformAliasPath(node.value, alias),
           });
         }
+      }
+    },
+    // 获取export * from ’xxx‘的内容
+    ExportNamedDeclaration(path) {
+      if (path.node.source?.value) {
+        const modules: string[] = [];
+
+        result.push({
+          type: 'import',
+          modules,
+          sourcePath: utils.transformAliasPath(path.node.source.value, alias),
+        });
       }
     },
   });
