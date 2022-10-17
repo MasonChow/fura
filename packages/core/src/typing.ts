@@ -15,6 +15,8 @@ export type DirType = {
   totalSize: number;
   // 总大小(格式化)
   totalFormatSize: string;
+  // 目录下文件内容
+  files: string[];
 };
 
 export type DirFilesType = {
@@ -41,3 +43,5 @@ export type DirFilesTree = {
   type: 'dir' | 'file';
   children?: DirFilesTree[];
 };
+
+export type GetMapValue<V> = V extends Map<any, infer E> ? E : never;

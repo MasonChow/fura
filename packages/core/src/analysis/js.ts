@@ -10,7 +10,7 @@ interface Options extends TranslatorTypes.TranslatorOptions {
 
 class AnalysisJS {
   // 解析结果
-  private resultMap: Map<
+  private analysisFileReferenceMap: Map<
     string,
     {
       // 引用的
@@ -37,18 +37,49 @@ class AnalysisJS {
     this.init();
   }
 
-  get analysisResultData() {
-    return Object.fromEntries(this.resultMap);
-  }
-
   private init() {
     this.dir.files.forEach((key) => {
       // 解析JS
       if (utils.isJsTypeFile(key)) {
         const file = this.dir.filesMap.get(key)!;
-        this.analysis(file);
+        this.analysisFile(file);
       }
     });
+  }
+
+  public analysis() {
+    const unusedFiles = this.analysisUnusedFiles();
+    const { dirTree, filesMap, dirMap, files } = this.dir;
+    const fileReferenceMap = this.analysisFileReferenceMap;
+
+    const fileInfo = files.reduce(
+      (pre, file) => {
+        const info = filesMap.get(file)!;
+        const reference = fileReferenceMap.get(file)!;
+        const isUnused = unusedFiles.has(file);
+
+        pre[file] = {
+          ...info,
+          reference,
+          isUnused,
+        };
+
+        return pre;
+      },
+      Object.create(null) as Record<
+        string,
+        {
+          reference: Types.GetMapValue<typeof fileReferenceMap>;
+          isUnused: boolean;
+        } & Types.DirFilesType
+      >,
+    );
+
+    return {
+      dirTree,
+      fileDetail: fileInfo,
+      dirDetail: Object.fromEntries(dirMap),
+    };
   }
 
   // 自动补全index文件
@@ -86,18 +117,18 @@ class AnalysisJS {
     const { targetPath, type, insertValue } = params;
 
     // 没查到则初始化
-    if (!this.resultMap.has(targetPath)) {
-      this.resultMap.set(targetPath, {
+    if (!this.analysisFileReferenceMap.has(targetPath)) {
+      this.analysisFileReferenceMap.set(targetPath, {
         imports: [],
         users: [],
       });
     }
 
-    this.resultMap.get(targetPath)![type].push(insertValue);
+    this.analysisFileReferenceMap.get(targetPath)![type].push(insertValue);
   }
 
   // 分析数据
-  public analysis(file: Types.DirFilesType) {
+  public analysisFile(file: Types.DirFilesType) {
     const filePath = file.path;
 
     const translator = new Translator({ filePath }, this.options);
@@ -141,7 +172,9 @@ class AnalysisJS {
   public analysisUnusedFiles() {
     const rootFile = this.getDirIndexFile(this.targetDir);
     const unUsedFiles = new Set<string>();
-    const fileMap = cloneDeep(this.analysisResultData);
+    const fileMap = cloneDeep(
+      Object.fromEntries(this.analysisFileReferenceMap),
+    );
 
     let hasUnUsedFile = true;
 

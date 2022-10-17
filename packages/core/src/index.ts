@@ -3,6 +3,7 @@ import * as utils from './utils';
 import AnalysisJS from './analysis/js';
 import fs from 'fs';
 import child_process from 'child_process';
+
 export interface Config {
   // 入口文件路径 index.ts / index.js / index.tsx / index.jsx
   // root: string;
@@ -19,6 +20,21 @@ export interface Config {
   };
 }
 
+const resultDir = path.join(process.cwd(), '.fura');
+
+try {
+  fs.readdirSync(resultDir);
+} catch (error) {
+  fs.mkdirSync(resultDir);
+}
+
+function setResultData<T extends Record<string, any> = any>(
+  filename: string,
+  data: T,
+) {
+  fs.writeFileSync(path.join(resultDir, filename), JSON.stringify(data));
+}
+
 function main(config: Config) {
   let targetDir = config.targetDir;
 
@@ -29,7 +45,7 @@ function main(config: Config) {
   // 分析js引用
   const analysisJS = new AnalysisJS(targetDir, config.options);
 
-  return analysisJS;
+  setResultData('result.json', analysisJS.analysis());
 }
 
 export default main;

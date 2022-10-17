@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import * as types from './typing';
+import * as Types from './typing';
 
 // js文件后缀类型
 export const jsFileSuffix = ['js', 'jsx', 'ts', 'tsx'] as const;
@@ -61,10 +61,16 @@ export function formatFileSize(size: number): string {
  * 获取目标目录下所有文件的Map
  */
 export function getDirFiles(rootDir: string, exclude?: string[]) {
-  const filesMap: Map<string, types.DirFilesType> = new Map();
-  const dirMap: Map<string, types.DirType> = new Map();
+  const filesMap: Map<string, Types.DirFilesType> = new Map();
+  const dirMap: Map<string, Types.DirType> = new Map();
 
-  function addDirUsageInfo(dirPath: string, addSize: number) {
+  function addDirUsageInfo(
+    dirPath: string,
+    file: {
+      id: string;
+      size: number;
+    },
+  ) {
     const dir = dirMap.get(dirPath);
 
     if (!dir) {
@@ -72,17 +78,18 @@ export function getDirFiles(rootDir: string, exclude?: string[]) {
     }
 
     dir.fileCount += 1;
-    dir.totalSize += addSize;
+    dir.totalSize += file.size;
+    dir.files.push(file.id);
     dir.totalFormatSize = formatFileSize(dir.totalSize);
     dirMap.set(dirPath, dir);
 
     if (dir.parentPath) {
-      addDirUsageInfo(dir.parentPath, addSize);
+      addDirUsageInfo(dir.parentPath, file);
     }
   }
 
   function reader(dir: string) {
-    const fileTree: types.DirFilesTree = {
+    const fileTree: Types.DirFilesTree = {
       id: dir,
       name: dir.split('/').reverse()[0],
       path: dir,
@@ -116,6 +123,7 @@ export function getDirFiles(rootDir: string, exclude?: string[]) {
           totalSize: 0,
           fileCount: 0,
           totalFormatSize: formatFileSize(0),
+          files: [],
         });
 
         fileTree.children?.push(reader(pathname));
@@ -128,7 +136,7 @@ export function getDirFiles(rootDir: string, exclude?: string[]) {
           fileSize: fileStat.size,
         });
 
-        addDirUsageInfo(dir, fileStat.size);
+        addDirUsageInfo(dir, { id: baseInfo.id, size: fileStat.size });
 
         fileTree.children?.push({
           ...baseInfo,
@@ -140,7 +148,7 @@ export function getDirFiles(rootDir: string, exclude?: string[]) {
     return fileTree;
   }
 
-  const dirTree: types.DirFilesTree = reader(rootDir);
+  const dirTree: Types.DirFilesTree = reader(rootDir);
   const files: string[] = [...filesMap.keys()];
 
   return { filesMap, dirMap, dirTree, files };
