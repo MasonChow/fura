@@ -27,6 +27,20 @@ class AnalysisJS {
   private targetDir: string;
   // 实例化
   constructor(targetDir: string, options?: Options) {
+    console.log('开始实例化');
+    console.log('目标目录:', targetDir);
+    console.time('实例化完成');
+    // 提前处理一波alias配置
+    if (options?.alias) {
+      options.alias = Object.entries(options.alias).reduce(
+        (pre, [key, value]) => {
+          pre[key] = path.join(targetDir, value);
+          return pre;
+        },
+        {} as Required<Options>['alias'],
+      );
+    }
+
     // 写入目标文件
     this.targetDir = targetDir;
     // 写入配置
@@ -35,6 +49,7 @@ class AnalysisJS {
     this.dir = utils.getDirFiles(targetDir, options?.exclude);
     // 初始化分析
     this.init();
+    console.timeEnd('实例化完成');
   }
 
   private init() {
@@ -48,6 +63,9 @@ class AnalysisJS {
   }
 
   public analysis() {
+    console.time('分析内容');
+    console.time('分析内容完成');
+
     const unusedFiles = this.analysisUnusedFiles();
     const { dirTree, filesMap, dirMap, files } = this.dir;
     const fileReferenceMap = this.analysisFileReferenceMap;
@@ -75,6 +93,7 @@ class AnalysisJS {
       >,
     );
 
+    console.timeEnd('分析内容完成');
     return {
       dirTree,
       fileDetail: fileInfo,
@@ -170,6 +189,9 @@ class AnalysisJS {
   }
 
   public analysisUnusedFiles() {
+    console.log('分析未使用文件');
+    console.time('分析未使用文件完成');
+
     const rootFile = this.getDirIndexFile(this.targetDir);
     const unUsedFiles = new Set<string>();
     const fileMap = cloneDeep(
@@ -200,7 +222,7 @@ class AnalysisJS {
         }
       });
     }
-
+    console.timeEnd('分析未使用文件完成');
     return unUsedFiles;
   }
 }
