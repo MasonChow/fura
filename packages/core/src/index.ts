@@ -1,16 +1,14 @@
 import path from 'path';
-import * as utils from './utils';
 import AnalysisJS from './analysis/js';
 import fs from 'fs';
-import child_process from 'child_process';
 
 export interface Config {
   // 入口文件路径 index.ts / index.js / index.tsx / index.jsx
   // root: string;
-  // 执行分析目录
-  targetDir: string;
+  // 执行分析目录入口
+  entryDir: string;
   // 分析入口目录 默认 .
-  rootPath?: string;
+  cwd?: string;
   // 配置项
   options?: {
     // 路径别名 例如 {'@/*': 'src/*'}
@@ -36,10 +34,10 @@ function setResultData<T extends Record<string, any> = any>(
 }
 
 function main(config: Config) {
-  let targetDir = config.targetDir;
+  let targetDir = config.entryDir;
 
-  if (config.rootPath) {
-    targetDir = path.join(config.rootPath || '.', config.targetDir);
+  if (config.cwd) {
+    targetDir = path.join(config.cwd || process.cwd(), config.entryDir);
   }
 
   // 分析js引用
