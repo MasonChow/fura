@@ -1,4 +1,4 @@
-export type DirType = {
+export interface DirType {
   // 文件夹名称
   dirName: string;
   // 文件夹名字
@@ -17,9 +17,9 @@ export type DirType = {
   totalFormatSize: string;
   // 目录下文件内容
   files: string[];
-};
+}
 
-export type DirFilesType = {
+export interface DirFilesType {
   // 文件名
   fileName: string;
   // 文件路径
@@ -34,14 +34,14 @@ export type DirFilesType = {
   fileFormatSize: string;
   // 文件大小 单位byte
   fileSize: number;
-};
+}
 
-export type DirFilesTree = {
+export interface DirFilesTree {
   name: string;
   path: string;
   id: string;
   type: 'dir' | 'file';
   children?: DirFilesTree[];
-};
+}
 
 export type GetMapValue<V> = V extends Map<any, infer E> ? E : never;

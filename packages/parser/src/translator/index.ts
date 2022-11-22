@@ -1,6 +1,7 @@
 import { parseAsync } from '../astCreator';
 import { AST, TranslatorSource, TranslatorOptions } from '../typing';
 import jsTranslator from './js';
+
 export default class Translator {
   private ast: AST;
 

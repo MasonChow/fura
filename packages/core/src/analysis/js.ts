@@ -1,8 +1,8 @@
 import path from 'path';
 import { types as TranslatorTypes, Translator } from '@fura/parser';
+import cloneDeep from 'lodash/cloneDeep';
 import * as Types from '../typing';
 import * as utils from '../utils';
-import cloneDeep from 'lodash/cloneDeep';
 
 interface Options extends TranslatorTypes.TranslatorOptions {
   exclude?: string[];
@@ -19,17 +19,22 @@ class AnalysisJS {
       users: string[];
     }
   > = new Map();
+
   // 读取的文件夹的内容
   private dir: ReturnType<typeof utils.getDirFiles>;
+
   // 配置项
   private options?: Options;
+
   // 执行的文件目录
   private targetDir: string;
+
   // 实例化
   constructor(targetDir: string, options?: Options) {
-    console.log('开始实例化');
-    console.log('目标目录:', targetDir);
+    console.info('开始实例化');
+    console.info('目标目录:', targetDir);
     console.time('实例化完成');
+
     // 提前处理一波alias配置
     if (options?.alias) {
       options.alias = Object.entries(options.alias).reduce(
@@ -210,7 +215,7 @@ class AnalysisJS {
 
         // 仅分析项目内部的
         if (isRootFile || !this.isDirFile(file)) {
-          return;
+          hasUnUsedFile = true;
         }
 
         const users = item.users.filter((i) => !unUsedFiles.has(i)) || [];

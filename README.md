@@ -33,3 +33,4 @@ ast解析，单个文件import解析能力提供
 - 读取tsconfig，并在项目中找出未使用的ts导出 [github](https://github.com/nadeesha/ts-prune)
 - 检查代码中未使用模块，`eslint/no-unused-vars`
 - 自动修复代码中异常代码块，`eslint --fix`
+- umi检查未使用代码导出配置 [文档](https://umijs.org/docs/api/config#deadcode)

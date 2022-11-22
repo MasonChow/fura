@@ -1,12 +1,10 @@
 import path from 'path';
-import AnalysisJS from './analysis/js';
 import fs from 'fs';
+import AnalysisJS from './analysis/js';
 
 export interface Config {
   // 入口文件路径 index.ts / index.js / index.tsx / index.jsx
   // root: string;
-  // 执行分析目录入口
-  entryDir: string;
   // 分析入口目录 默认 .
   cwd?: string;
   // 配置项
@@ -15,6 +13,8 @@ export interface Config {
     alias?: Record<string, string>;
     // 忽略查询的目录
     exclude?: string[];
+    // 需要执行分析的目录, 默认仅分析src/*
+    include?: string[];
   };
 }
 

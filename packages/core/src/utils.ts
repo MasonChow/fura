@@ -41,20 +41,21 @@ export function createDirIndexFilePaths(filePath: string) {
  * B/KB/MB/GB/TB
  */
 export function formatFileSize(size: number): string {
-  const base = 1024; //byte
+  const base = 1024; // byte
   if (size < base) {
-    return size.toFixed(2) + 'B';
+    return `${size.toFixed(2)}B`;
   }
+
   if (size < Math.pow(base, 2)) {
-    return (size / base).toFixed(2) + 'KB';
+    return `${(size / base).toFixed(2)}KB`;
   }
   if (size < Math.pow(base, 3)) {
-    return (size / Math.pow(base, 2)).toFixed(2) + 'MB';
+    return `${(size / Math.pow(base, 2)).toFixed(2)}MB`;
   }
   if (size < Math.pow(base, 4)) {
-    return (size / Math.pow(base, 3)).toFixed(2) + 'GB';
+    return `${(size / Math.pow(base, 3)).toFixed(2)}GB`;
   }
-  return (size / Math.pow(base, 4)).toFixed(2) + 'TB';
+  return `${(size / Math.pow(base, 4)).toFixed(2)}TB`;
 }
 
 /**
@@ -151,5 +152,10 @@ export function getDirFiles(rootDir: string, exclude?: string[]) {
   const dirTree: Types.DirFilesTree = reader(rootDir);
   const files: string[] = [...filesMap.keys()];
 
-  return { filesMap, dirMap, dirTree, files };
+  return {
+    filesMap,
+    dirMap,
+    dirTree,
+    files,
+  };
 }

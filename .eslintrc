@@ -1,6 +1,8 @@
 {
   "extends": [
-    "airbnb-base"
+    "airbnb-base",
+    "next/core-web-vitals",
+    "plugin:prettier/recommended"
   ],
   "parser": "@typescript-eslint/parser",
   "plugins": [
@@ -13,6 +15,36 @@
     "@typescript-eslint/consistent-type-definitions": [
       "error",
       "interface"
+    ],
+    "import/no-unresolved": [
+      2,
+      {
+        "commonjs": true,
+        "amd": false
+      }
+    ],
+    "import/extensions": [
+      0,
+      "never"
+    ],
+    "prefer-exponentiation-operator": 0,
+    "no-restricted-properties": "off",
+    "import/prefer-default-export": "off",
+    "import/no-extraneous-dependencies": "off",
+    "no-param-reassign": "warn",
+    "no-plusplus": "off",
+    "no-loop-func": "off",
+    "no-console": [
+      "warn",
+      {
+        "allow": [
+          "info",
+          "warn",
+          "error",
+          "time",
+          "timeEnd"
+        ]
+      }
     ]
   }
 }

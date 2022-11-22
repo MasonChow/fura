@@ -6,7 +6,8 @@
   "scripts": {
     "build:all": "npm run build --workspaces",
     "dev:parser": "npm run dev --workspace=packages/parser",
-    "test": "jest"
+    "test": "jest",
+    "eslint": "npx eslint packages/**/src/* --ext .js,.ts --fix"
   },
   "keywords": [],
   "authors": [
@@ -28,6 +29,9 @@
     "@typescript-eslint/parser": "^5.39.0",
     "eslint": "^8.24.0",
     "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-next": "^13.0.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
     "father": "^4.0.6",
     "jest": "^29.1.2",
     "prettier": "^2.7.1",
