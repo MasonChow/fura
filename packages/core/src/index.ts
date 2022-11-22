@@ -7,6 +7,8 @@ export interface Config {
   // root: string;
   // 分析入口目录 默认 .
   cwd?: string;
+  // 入口文件目录
+  entryDir: string;
   // 配置项
   options?: {
     // 路径别名 例如 {'@/*': 'src/*'}

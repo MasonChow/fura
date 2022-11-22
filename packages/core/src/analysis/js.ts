@@ -194,7 +194,7 @@ class AnalysisJS {
   }
 
   public analysisUnusedFiles() {
-    console.log('分析未使用文件');
+    console.info('分析未使用文件');
     console.time('分析未使用文件完成');
 
     const rootFile = this.getDirIndexFile(this.targetDir);
@@ -215,7 +215,7 @@ class AnalysisJS {
 
         // 仅分析项目内部的
         if (isRootFile || !this.isDirFile(file)) {
-          hasUnUsedFile = true;
+          return;
         }
 
         const users = item.users.filter((i) => !unUsedFiles.has(i)) || [];
