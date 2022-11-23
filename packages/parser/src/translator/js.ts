@@ -5,7 +5,9 @@ import traverse from '@babel/traverse';
 import { AST, TranslatorOptions } from '../typing';
 import * as utils from '../utils';
 
-export function translatorImports(ast: AST, option: TranslatorOptions = {}) {
+const COMMON_REG = /\* @(.*)/;
+
+export function translator(ast: AST, option: TranslatorOptions = {}) {
   const { alias = {} } = option;
 
   const result: Array<{
@@ -53,7 +55,37 @@ export function translatorImports(ast: AST, option: TranslatorOptions = {}) {
     },
   });
 
-  return result;
+  const comments = (ast.comments || []).map((comment) => {
+    if (comment.type === 'CommentBlock') {
+      const props = comment.value.split('\n').reduce((pre, cur) => {
+        const matchStr = cur.match(COMMON_REG)?.[1];
+
+        if (matchStr) {
+          const [key, ...value] = matchStr.split(/\s/);
+
+          pre[key] = value.join('');
+        }
+
+        return pre;
+      }, {} as Record<string, string>);
+
+      return {
+        type: 'block',
+        content: comment.value.trim(),
+        props,
+      };
+    }
+
+    return {
+      type: 'line',
+      content: comment.value.trim(),
+    };
+  });
+
+  return {
+    imports: result,
+    comments,
+  };
 }
 
-export default translatorImports;
+export default translator;

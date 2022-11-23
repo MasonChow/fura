@@ -156,7 +156,8 @@ class AnalysisJS {
     const filePath = file.path;
 
     const translator = new Translator({ filePath }, this.options);
-    translator.translateJS().forEach((e) => {
+    const { imports, comments } = translator.translateJS();
+    imports.forEach((e) => {
       let { sourcePath } = e;
       // 这证明不是npm包，特殊处理一下
       // 现在暴力处理这个就够了
@@ -191,6 +192,8 @@ class AnalysisJS {
         insertValue: filePath,
       });
     });
+
+    console.log(comments);
   }
 
   public analysisUnusedFiles() {

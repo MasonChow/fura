@@ -3,7 +3,7 @@ import { AST, TranslatorSource, TranslatorOptions } from '../typing';
 import jsTranslator from './js';
 
 export default class Translator {
-  private ast: AST;
+  public ast: AST;
 
   private options?: TranslatorOptions;
 
@@ -24,7 +24,7 @@ export default class Translator {
     }
   }
 
-  translateJS() {
+  translateJS(): ReturnType<typeof jsTranslator> {
     return jsTranslator(this.ast, this.options);
   }
 }

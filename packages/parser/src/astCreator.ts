@@ -6,6 +6,7 @@ import { TranslatorSource } from './typing';
 
 const config: parser.ParserOptions = {
   sourceType: 'module',
+  attachComment: true,
   plugins: ['dynamicImport', 'jsx', 'typescript'],
 };
 

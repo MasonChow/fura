@@ -1,11 +1,12 @@
-# `parser`
+# 解析器
 
-> TODO: description
+文件内容解析器
 
-## Usage
+已实现能力
 
-```
-const parser = require('parser');
+- 获取导入的路径
+  
+TODO
 
-// TODO: DEMONSTRATE API
-```
+- 获取注释
+  
