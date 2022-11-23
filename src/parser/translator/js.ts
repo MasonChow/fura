@@ -3,7 +3,7 @@
 import * as t from '@babel/types';
 import traverse from '@babel/traverse';
 import { AST, TranslatorOptions } from '../typing';
-import * as utils from '../utils';
+import * as utils from '../../utils';
 
 const COMMON_REG = /\* @(.*)/;
 
@@ -56,6 +56,11 @@ export function translator(ast: AST, option: TranslatorOptions = {}) {
   });
 
   const comments = (ast.comments || []).map((comment) => {
+    // const base = {
+    //   startLine: comment.start,
+    //   endLine: comment.end,
+    // };
+
     if (comment.type === 'CommentBlock') {
       const props = comment.value.split('\n').reduce((pre, cur) => {
         const matchStr = cur.match(COMMON_REG)?.[1];
