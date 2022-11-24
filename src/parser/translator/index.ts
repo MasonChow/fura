@@ -1,11 +1,11 @@
-import { parseAsync } from '../astCreator';
-import { AST, TranslatorSource, TranslatorOptions } from '../typing';
-import jsTranslator from './js';
+import { parseAsync, TranslatorSource } from '../../helper/ast_creator';
+import { AST } from '../../typings/babel';
+import jsTranslator, { TranslatorOptions, TranslateResult } from './js';
 
 export default class Translator {
-  public ast: AST;
+  public readonly ast: AST;
 
-  private options?: TranslatorOptions;
+  public readonly options?: TranslatorOptions;
 
   constructor(
     source: TranslatorSource & { ast?: AST },
@@ -24,7 +24,9 @@ export default class Translator {
     }
   }
 
-  translateJS(): ReturnType<typeof jsTranslator> {
+  translateJS(): TranslateResult {
     return jsTranslator(this.ast, this.options);
   }
 }
+
+export interface TranslatorType extends Translator {}

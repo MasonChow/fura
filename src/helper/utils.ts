@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
-import * as Types from './typing';
+import * as UtilTypes from '../typings/utils';
+
+export * as UtilTypes from '../typings/utils';
 
 // js文件后缀类型
 export const jsFileSuffix = ['js', 'jsx', 'ts', 'tsx'] as const;
@@ -62,8 +64,8 @@ export function formatFileSize(size: number): string {
  * 获取目标目录下所有文件的Map
  */
 export function getDirFiles(rootDir: string, exclude?: string[]) {
-  const filesMap: Map<string, Types.DirFilesType> = new Map();
-  const dirMap: Map<string, Types.DirType> = new Map();
+  const filesMap: Map<string, UtilTypes.DirFilesType> = new Map();
+  const dirMap: Map<string, UtilTypes.DirType> = new Map();
 
   function addDirUsageInfo(
     dirPath: string,
@@ -90,7 +92,7 @@ export function getDirFiles(rootDir: string, exclude?: string[]) {
   }
 
   function reader(dir: string) {
-    const fileTree: Types.DirFilesTree = {
+    const fileTree: UtilTypes.DirFilesTree = {
       id: dir,
       name: dir.split('/').reverse()[0],
       path: dir,
@@ -149,7 +151,7 @@ export function getDirFiles(rootDir: string, exclude?: string[]) {
     return fileTree;
   }
 
-  const dirTree: Types.DirFilesTree = reader(rootDir);
+  const dirTree: UtilTypes.DirFilesTree = reader(rootDir);
   const files: string[] = [...filesMap.keys()];
 
   return {
@@ -158,4 +160,28 @@ export function getDirFiles(rootDir: string, exclude?: string[]) {
     dirTree,
     files,
   };
+}
+
+// alias 路径匹配转换
+export function transformAliasPath(
+  sourcePath: string,
+  alias: Record<string, string>,
+) {
+  const aliasMap = new Map<RegExp, string>();
+  Object.entries(alias).forEach(([key, value]) => {
+    const reg = new RegExp(`^${key}(\\/|$)`);
+    const targetPath = value.endsWith('/') ? value : `${value}/`;
+    aliasMap.set(reg, targetPath);
+  });
+  const regKeys = [...aliasMap.keys()];
+
+  for (let i = 0; i < regKeys.length; i++) {
+    const reg = regKeys[i];
+
+    if (reg.test(sourcePath) && aliasMap.get(reg) !== undefined) {
+      return sourcePath.replace(reg, aliasMap.get(reg)!);
+    }
+  }
+
+  return sourcePath;
 }

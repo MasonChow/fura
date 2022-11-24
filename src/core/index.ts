@@ -36,6 +36,7 @@ function setResultData<T extends Record<string, any> = any>(
 }
 
 function main(config: Config) {
+  console.time('程序执行完成');
   let targetDir = config.entryDir;
 
   if (config.cwd) {
@@ -46,6 +47,7 @@ function main(config: Config) {
   const analysisJS = new AnalysisJS(targetDir, config.options);
 
   setResultData('result.json', analysisJS.analysis());
+  console.timeEnd('程序执行完成');
 }
 
 export default main;

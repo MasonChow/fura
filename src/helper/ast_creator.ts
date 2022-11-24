@@ -2,7 +2,12 @@
 import * as parser from '@babel/parser';
 import fs from 'fs';
 
-import { TranslatorSource } from './typing';
+export interface TranslatorSource {
+  // 内容
+  content?: string;
+  // 文件路径
+  filePath?: string;
+}
 
 const config: parser.ParserOptions = {
   sourceType: 'module',

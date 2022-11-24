@@ -2,10 +2,15 @@
 
 import * as t from '@babel/types';
 import traverse from '@babel/traverse';
-import { AST, TranslatorOptions } from '../typing';
-import * as utils from '../../utils';
+import { AST } from '../../typings/babel';
+import * as utils from '../../helper/utils';
 
 const COMMON_REG = /\* @(.*)/;
+
+export interface TranslatorOptions {
+  // 路径别名 例如 {'@/*': 'src/*'}
+  alias?: Record<string, string>;
+}
 
 export function translator(ast: AST, option: TranslatorOptions = {}) {
   const { alias = {} } = option;
@@ -78,13 +83,13 @@ export function translator(ast: AST, option: TranslatorOptions = {}) {
         type: 'block',
         content: comment.value.trim(),
         props,
-      };
+      } as const;
     }
 
     return {
       type: 'line',
       content: comment.value.trim(),
-    };
+    } as const;
   });
 
   return {
@@ -92,5 +97,7 @@ export function translator(ast: AST, option: TranslatorOptions = {}) {
     comments,
   };
 }
+
+export type TranslateResult = ReturnType<typeof translator>;
 
 export default translator;

@@ -1,24 +1,32 @@
 import path from 'path';
-import { types as TranslatorTypes, Translator } from '@fura/parser';
 import cloneDeep from 'lodash/cloneDeep';
-import * as Types from '../typing';
-import * as utils from '../utils';
+import { Translator, TranslatorType } from '../../parser';
+import * as utils from '../../helper/utils';
 
-interface Options extends TranslatorTypes.TranslatorOptions {
+type Options = {
   exclude?: string[];
+} & TranslatorType['options'];
+
+interface AnalysisFileInfo {
+  // 引用的
+  imports: string[];
+  // 使用方
+  users: string[];
+  // 描述信息
+  description: {
+    type: 'page' | 'module';
+    name: string;
+    props: Record<string, string>;
+    functions: Array<{ name: string; props: Record<string, string> }>;
+  };
 }
+
+type FileType = utils.UtilTypes.DirFilesType;
 
 class AnalysisJS {
   // 解析结果
-  private analysisFileReferenceMap: Map<
-    string,
-    {
-      // 引用的
-      imports: string[];
-      // 使用方
-      users: string[];
-    }
-  > = new Map();
+  private analysisFileReferenceMap: Map<string, Partial<AnalysisFileInfo>> =
+    new Map();
 
   // 读取的文件夹的内容
   private dir: ReturnType<typeof utils.getDirFiles>;
@@ -45,7 +53,6 @@ class AnalysisJS {
         {} as Required<Options>['alias'],
       );
     }
-
     // 写入目标文件
     this.targetDir = targetDir;
     // 写入配置
@@ -92,9 +99,9 @@ class AnalysisJS {
       Object.create(null) as Record<
         string,
         {
-          reference: Types.GetMapValue<typeof fileReferenceMap>;
+          reference: utils.UtilTypes.GetMapValue<typeof fileReferenceMap>;
           isUnused: boolean;
-        } & Types.DirFilesType
+        } & utils.UtilTypes.DirFilesType
       >,
     );
 
@@ -132,32 +139,51 @@ class AnalysisJS {
     return this.dir.filesMap.has(filePath);
   }
 
-  // 插入数据
-  private insert(params: {
+  private getAnalysisFile(filePath: string) {
+    const target: Partial<AnalysisFileInfo> =
+      this.analysisFileReferenceMap.get(filePath) || Object.create(null);
+
+    return target;
+  }
+
+  private setAnalysisFile(filePath: string, data: Partial<AnalysisFileInfo>) {
+    const target = this.getAnalysisFile(filePath);
+
+    this.analysisFileReferenceMap.set(filePath, {
+      ...target,
+      ...data,
+    });
+  }
+
+  // 插入关系链数据
+  private insertRelationVal(params: {
     targetPath: string;
-    type: 'imports' | 'users';
+    type: keyof Pick<AnalysisFileInfo, 'imports' | 'users'>;
     insertValue: string;
   }) {
     const { targetPath, type, insertValue } = params;
+    const target = this.getAnalysisFile(targetPath);
+    const prevData = target[type] || [];
 
-    // 没查到则初始化
-    if (!this.analysisFileReferenceMap.has(targetPath)) {
-      this.analysisFileReferenceMap.set(targetPath, {
-        imports: [],
-        users: [],
-      });
-    }
+    prevData.push(insertValue);
 
-    this.analysisFileReferenceMap.get(targetPath)![type].push(insertValue);
+    this.setAnalysisFile(targetPath, {
+      [type]: prevData,
+    });
   }
 
-  // 分析数据
-  public analysisFile(file: Types.DirFilesType) {
+  /**
+   * @function 设置文件之间的依赖数据
+   * @author Mason
+   * @private
+   */
+  private setFileRelations(
+    file: FileType,
+    relations: ReturnType<TranslatorType['translateJS']>['imports'] = [],
+  ) {
     const filePath = file.path;
-
-    const translator = new Translator({ filePath }, this.options);
-    const { imports, comments } = translator.translateJS();
-    imports.forEach((e) => {
+    // 记录使用的数据
+    relations.forEach((e) => {
       let { sourcePath } = e;
       // 这证明不是npm包，特殊处理一下
       // 现在暴力处理这个就够了
@@ -179,21 +205,87 @@ class AnalysisJS {
       }
 
       // 写入使用的
-      this.insert({
+      this.insertRelationVal({
         targetPath: filePath,
         type: 'imports',
         insertValue: sourcePath,
       });
 
       // 写入被使用的
-      this.insert({
+      this.insertRelationVal({
         targetPath: sourcePath,
         type: 'users',
         insertValue: filePath,
       });
     });
+  }
 
-    console.log(comments);
+  /**
+   * @function 设置文件的描述信息
+   * @author Mason
+   * @private
+   */
+  private setFileDescription(
+    file: FileType,
+    comments: ReturnType<TranslatorType['translateJS']>['comments'] = [],
+  ) {
+    const filePath = file.path;
+    const functions: AnalysisFileInfo['description']['functions'] = [];
+    let props: AnalysisFileInfo['description']['props'] = Object.create(null);
+    let name = '';
+    let type: AnalysisFileInfo['description']['type'] = 'module';
+
+    comments.forEach((comment) => {
+      if (comment.type === 'block') {
+        const commentProps = comment.props;
+
+        if (commentProps.page && !name) {
+          const { page, ...others } = commentProps;
+          type = 'page';
+          name = page;
+          props = others;
+          return;
+        }
+
+        if (type !== 'page' && commentProps.module && !name) {
+          const { module, ...others } = commentProps;
+          name = module;
+          props = others;
+          return;
+        }
+
+        if (commentProps.function) {
+          const { function: functionName, ...othersProps } = commentProps;
+
+          functions.push({
+            name: functionName,
+            props: othersProps,
+          });
+        }
+      }
+    });
+
+    if (name) {
+      this.setAnalysisFile(filePath, {
+        description: {
+          type,
+          name,
+          props,
+          functions,
+        },
+      });
+    }
+  }
+
+  // 分析数据
+  public analysisFile(file: FileType) {
+    const filePath = file.path;
+
+    const translator = new Translator({ filePath }, this.options);
+    const { imports, comments } = translator.translateJS();
+
+    this.setFileRelations(file, imports);
+    this.setFileDescription(file, comments);
   }
 
   public analysisUnusedFiles() {
@@ -221,7 +313,7 @@ class AnalysisJS {
           return;
         }
 
-        const users = item.users.filter((i) => !unUsedFiles.has(i)) || [];
+        const users = item.users?.filter((i) => !unUsedFiles.has(i)) || [];
 
         if (!users.length) {
           unUsedFiles.add(file);
