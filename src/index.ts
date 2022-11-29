@@ -1,3 +1,7 @@
-import core from './core';
+/**
+ * @module 总导出模块
+ */
 
-export default core;
+import main from './main';
+
+export default main;

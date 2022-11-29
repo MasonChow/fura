@@ -1,3 +1,7 @@
+/**
+ * @module utils.ts内用到的类型
+ */
+
 export interface DirType {
   // 文件夹名称
   dirName: string;

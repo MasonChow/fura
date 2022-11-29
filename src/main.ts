@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs';
-import AnalysisJS from './analysis/js';
+import AnalysisJS from './analysis';
 
 export interface Config {
   // 入口文件路径 index.ts / index.js / index.tsx / index.jsx
@@ -28,7 +28,7 @@ try {
   fs.mkdirSync(resultDir);
 }
 
-function setResultData<T extends Record<string, any> = any>(
+function setDiskCache<T extends Record<string, any> = any>(
   filename: string,
   data: T,
 ) {
@@ -46,7 +46,8 @@ function main(config: Config) {
   // 分析js引用
   const analysisJS = new AnalysisJS(targetDir, config.options);
 
-  setResultData('result.json', analysisJS.analysis());
+  setDiskCache('result.json', analysisJS.result);
+  setDiskCache('unused.json', [...analysisJS.unUsedFiles]);
   console.timeEnd('程序执行完成');
 }
 

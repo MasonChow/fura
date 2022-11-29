@@ -1,7 +1,12 @@
+/**
+ * @module 文件夹分析模块
+ * @description 主要分析指定文件夹的文件关联
+ */
+
 import path from 'path';
 import cloneDeep from 'lodash/cloneDeep';
-import { Translator, TranslatorType } from '../../parser';
-import * as utils from '../../helper/utils';
+import { Translator, TranslatorType } from '../parser';
+import * as utils from '../helper/utils';
 
 type Options = {
   exclude?: string[];
@@ -37,6 +42,10 @@ class AnalysisJS {
   // 执行的文件目录
   private targetDir: string;
 
+  public unUsedFiles: Set<string> = new Set();
+
+  public result: ReturnType<typeof this.analysis> = Object.create(null);
+
   // 实例化
   constructor(targetDir: string, options?: Options) {
     console.info('开始实例化');
@@ -61,6 +70,9 @@ class AnalysisJS {
     this.dir = utils.getDirFiles(targetDir, options?.exclude);
     // 初始化分析
     this.init();
+    // 自动分析
+    this.analysis();
+
     console.timeEnd('实例化完成');
   }
 
@@ -74,6 +86,7 @@ class AnalysisJS {
     });
   }
 
+  // 手动分析
   public analysis() {
     console.time('分析内容');
     console.time('分析内容完成');
@@ -106,16 +119,26 @@ class AnalysisJS {
     );
 
     console.timeEnd('分析内容完成');
-    return {
+
+    const result = {
       dirTree,
       fileDetail: fileInfo,
       dirDetail: Object.fromEntries(dirMap),
     };
+
+    this.result = result;
+    return result;
   }
 
-  // 自动补全index文件
-  // xxx/App -> xxx/App.(ts|js|tsx|jsx)
-  // xxx/App -> xxx/App/index.(ts|js|tsx|jsx)
+  /**
+   * @function 自动补全index文件
+   * @author Mason
+   * @private
+   * @param filePath
+   *
+   * xxx/App -> xxx/App.(ts|js|tsx|jsx)
+   * xxx/App -> xxx/App/index.(ts|js|tsx|jsx)
+   */
   private getDirIndexFile(filePath: string) {
     let realFilePath = filePath;
 
@@ -278,7 +301,7 @@ class AnalysisJS {
   }
 
   // 分析数据
-  public analysisFile(file: FileType) {
+  private analysisFile(file: FileType) {
     const filePath = file.path;
 
     const translator = new Translator({ filePath }, this.options);
@@ -288,12 +311,13 @@ class AnalysisJS {
     this.setFileDescription(file, comments);
   }
 
-  public analysisUnusedFiles() {
+  private analysisUnusedFiles() {
     console.info('分析未使用文件');
     console.time('分析未使用文件完成');
 
     const rootFile = this.getDirIndexFile(this.targetDir);
     const unUsedFiles = new Set<string>();
+
     const fileMap = cloneDeep(
       Object.fromEntries(this.analysisFileReferenceMap),
     );
@@ -323,6 +347,9 @@ class AnalysisJS {
       });
     }
     console.timeEnd('分析未使用文件完成');
+
+    this.unUsedFiles = unUsedFiles;
+
     return unUsedFiles;
   }
 }
