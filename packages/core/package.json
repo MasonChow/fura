@@ -1,0 +1,44 @@
+{
+  "private": true,
+  "name": "@fura/core",
+  "version": "0.0.1",
+  "description": "文件使用关系分析(File usage relationship analysis)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MasonChow/fura.git"
+  },
+  "scripts": {
+    "dev": "father dev",
+    "build": "father build",
+    "build:deps": "father prebundle"
+  },
+  "keywords": [],
+  "authors": [
+    "zhoushunming <masonchow@qq.com>"
+  ],
+  "license": "MIT",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "unpkg": "dist/umd/core.min.js",
+  "types": "dist/cjs/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "bugs": {
+    "url": "https://github.com/MasonChow/fura/issues"
+  },
+  "devDependencies": {
+    "@babel/types": "^7.20.2",
+    "@types/babel__traverse": "^7.18.3",
+    "@types/lodash": "^4.14.189",
+    "father": "^4.0.6"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.20.3",
+    "@babel/traverse": "^7.20.5",
+    "lodash": "^4.17.21"
+  }
+}
