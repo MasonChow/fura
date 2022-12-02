@@ -2,15 +2,18 @@
   "compilerOptions": {
     "declaration": true,
     "esModuleInterop": true,
-    "module": "CommonJS",
-    "moduleResolution": "node",
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "strict": true,
     "skipLibCheck": true,
-    "target": "es2019",
-    "baseUrl": "./",
-    "outDir": "./dist",
+    "allowJs": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "incremental": true,
+    "module": "esnext",
+    "target": "ESNext"
   },
   "exclude": [
     "node_modules",
