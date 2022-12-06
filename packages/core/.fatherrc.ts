@@ -1,8 +1,11 @@
 import { defineConfig } from 'father';
 
 export default defineConfig({
-  esm: {},
-  cjs: {},
-  umd: {},
+  esm: {
+    transformer: 'swc',
+  },
+  cjs: {
+    transformer: 'swc',
+  },
   platform: 'node',
 });

@@ -4,4 +4,6 @@
 
 import main from './main';
 
+export type { ResultType } from './main';
+
 export default main;

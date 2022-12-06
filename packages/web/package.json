@@ -16,6 +16,7 @@
     "@types/react": "18.0.25",
     "@types/react-dom": "18.0.9",
     "autoprefixer": "^10.4.13",
+    "better-sqlite3": "^8.0.1",
     "daisyui": "^2.42.1",
     "lodash": "^4.17.21",
     "next": "13.0.5",

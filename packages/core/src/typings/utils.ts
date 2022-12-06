@@ -21,6 +21,8 @@ export interface DirType {
   totalFormatSize: string;
   // 目录下文件内容
   files: string[];
+  // 深度
+  depth: number;
 }
 
 export interface DirFilesType {
@@ -49,3 +51,5 @@ export interface DirFilesTree {
 }
 
 export type GetMapValue<V> = V extends Map<any, infer E> ? E : never;
+
+export type FileType = 'js' | 'css' | 'ts' | 'less' | 'others';

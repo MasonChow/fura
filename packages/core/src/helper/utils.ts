@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import { fs, path } from './fileReader';
+
 import * as UtilTypes from '../typings/utils';
 
 export * as UtilTypes from '../typings/utils';
@@ -21,6 +21,19 @@ export function isJsTypeFile(fileName: string): boolean {
   const testJsFileReg = new RegExp(`.(${jsFileSuffix.join('|')})$`);
 
   return testJsFileReg.test(fileName);
+}
+
+export function getFileType(fileName: string): UtilTypes.FileType {
+  if (isJsTypeFile(fileName)) {
+    if (/.(js|jsx)$/.test(fileName)) {
+      return 'js';
+    }
+    if (/.(ts|tsx)$/.test(fileName)) {
+      return 'ts';
+    }
+  }
+
+  return 'others';
 }
 
 /**
@@ -91,7 +104,7 @@ export function getDirFiles(rootDir: string, exclude?: string[]) {
     }
   }
 
-  function reader(dir: string) {
+  function reader(dir: string, depth = 0) {
     const fileTree: UtilTypes.DirFilesTree = {
       id: dir,
       name: dir.split('/').reverse()[0],
@@ -125,11 +138,12 @@ export function getDirFiles(rootDir: string, exclude?: string[]) {
           dirName: name,
           totalSize: 0,
           fileCount: 0,
+          depth,
           totalFormatSize: formatFileSize(0),
           files: [],
         });
 
-        fileTree.children?.push(reader(pathname));
+        fileTree.children?.push(reader(pathname, depth + 1));
       } else {
         filesMap.set(pathname, {
           ...baseInfo,

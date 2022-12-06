@@ -1,5 +1,16 @@
-import Link from 'next/link';
+import Table from './Table';
 
-export default function Page() {
-  return <div className="">项目清洁</div>;
+async function getData() {
+  const res = await fetch('http://localhost:3000/api/unused');
+  return res.json();
+}
+
+export default async function Page() {
+  const data = await getData();
+
+  if (data.length) {
+    return <Table data={data} />;
+  }
+
+  return null;
 }

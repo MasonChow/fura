@@ -3,13 +3,18 @@
  * @description 主要分析指定文件夹的文件关联
  */
 
-import path from 'path';
 import cloneDeep from 'lodash/cloneDeep';
+import keyBy from 'lodash/keyBy';
 import { Translator, TranslatorType } from '../parser';
+import { path } from '../helper/fileReader';
+import diskCache from '../helper/diskCache';
 import * as utils from '../helper/utils';
+import { DatabaseTable, Database } from '../helper/database';
 
 type Options = {
   exclude?: string[];
+  // 项目唯一标识符，默认local
+  project?: string;
 } & TranslatorType['options'];
 
 interface AnalysisFileInfo {
@@ -42,6 +47,9 @@ class AnalysisJS {
   // 执行的文件目录
   private targetDir: string;
 
+  // 储存
+  private DB: Database;
+
   public unUsedFiles: Set<string> = new Set();
 
   public result: ReturnType<typeof this.analysis> = Object.create(null);
@@ -66,17 +74,101 @@ class AnalysisJS {
     this.targetDir = targetDir;
     // 写入配置
     this.options = options;
-    // 目标文件map
-    this.dir = utils.getDirFiles(targetDir, options?.exclude);
-    // 初始化分析
-    this.init();
-    // 自动分析
-    this.analysis();
+    // 初始化DB
+    this.DB = new Database(
+      diskCache.createFilePath(`${options?.project || 'local'}.db`),
+      true,
+    );
+
+    this.dir = utils.getDirFiles(this.targetDir, this.options?.exclude);
 
     console.timeEnd('实例化完成');
   }
 
-  private init() {
+  // 写入基本信息
+  public async insertBaseData() {
+    // 目标文件map
+    const dir = utils.getDirFiles(this.targetDir, this.options?.exclude);
+
+    const tableDirs: Array<Partial<DatabaseTable['dir']>> = [];
+    const tableFiles: Array<Partial<DatabaseTable['file']>> = [];
+    const dirFileRelations: Record<string, string[]> = Object.create(null);
+
+    // 循环处理
+    function loopNode(node: utils.UtilTypes.DirFilesTree) {
+      if (node.type === 'dir') {
+        const dirInfo = dir.dirMap.get(node.id);
+
+        if (dirInfo) {
+          const { dirName, path: dirPath, files, depth } = dirInfo;
+
+          tableDirs.push({
+            name: dirName,
+            path: dirPath,
+            depth,
+          });
+
+          dirFileRelations[dirPath] = files;
+        }
+
+        node.children?.forEach(loopNode);
+      }
+
+      if (node.type === 'file') {
+        const {
+          path: filePath,
+          fileName,
+          fileSize,
+        } = dir.filesMap.get(node.id)!;
+        tableFiles.push({
+          name: fileName,
+          path: filePath,
+          size: fileSize,
+          type: utils.getFileType(node.id),
+        });
+      }
+    }
+
+    loopNode(dir.dirTree);
+
+    await Promise.all([
+      this.DB.inserts('dir', tableDirs),
+      this.DB.inserts('file', tableFiles),
+    ]);
+
+    const [dirs, files] = await Promise.all([
+      this.DB.query('dir', ['*']),
+      this.DB.query('file', ['*']),
+    ]);
+
+    const dirMap = keyBy(dirs, 'path');
+    const fileMap = keyBy(files, 'path');
+
+    await Promise.all(
+      Object.keys(dirFileRelations).map((dirPath) => {
+        const dirFiles = dirFileRelations[dirPath];
+        const relations: Array<Partial<DatabaseTable['dir_file_relation']>> =
+          [];
+
+        dirFiles.forEach((filePath) => {
+          relations.push({
+            dir_id: dirMap[dirPath]?.id || 0,
+            file_id: fileMap[filePath]?.id || 0,
+          });
+        });
+
+        return this.DB.inserts('dir_file_relation', relations);
+      }),
+    );
+  }
+
+  // 分析
+  public async analysis() {
+    console.time('分析内容');
+    console.time('分析内容完成');
+    // 目标文件map
+    await this.insertBaseData();
+    // 初始化分析
     this.dir.files.forEach((key) => {
       // 解析JS
       if (utils.isJsTypeFile(key)) {
@@ -84,12 +176,6 @@ class AnalysisJS {
         this.analysisFile(file);
       }
     });
-  }
-
-  // 手动分析
-  public analysis() {
-    console.time('分析内容');
-    console.time('分析内容完成');
 
     const unusedFiles = this.analysisUnusedFiles();
     const { dirTree, filesMap, dirMap, files } = this.dir;
@@ -126,7 +212,6 @@ class AnalysisJS {
       dirDetail: Object.fromEntries(dirMap),
     };
 
-    this.result = result;
     return result;
   }
 
@@ -353,5 +438,7 @@ class AnalysisJS {
     return unUsedFiles;
   }
 }
+
+export type AnalysisJSResultType = AnalysisJS['result'];
 
 export default AnalysisJS;

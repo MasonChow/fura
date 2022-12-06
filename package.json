@@ -19,6 +19,7 @@
   "publishConfig": {
     "access": "public"
   },
+  "preinstall": "npx only-allow pnpm",
   "bugs": {
     "url": "https://github.com/MasonChow/fura/issues"
   },

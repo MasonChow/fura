@@ -1,6 +1,7 @@
 // ast构造器
 import * as parser from '@babel/parser';
-import fs from 'fs';
+
+import { fs } from './fileReader';
 
 export interface TranslatorSource {
   // 内容

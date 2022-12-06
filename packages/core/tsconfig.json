@@ -2,7 +2,5 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "moduleResolution": "node",
-    "baseUrl": "./",
-    "outDir": "./dist",
   },
 }

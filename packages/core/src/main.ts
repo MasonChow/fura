@@ -1,6 +1,8 @@
-import path from 'path';
-import fs from 'fs';
-import AnalysisJS from './analysis';
+import { path } from './helper/fileReader';
+import diskCache from './helper/diskCache';
+import AnalysisJS, { AnalysisJSResultType } from './analysis';
+
+export type ResultType = AnalysisJSResultType;
 
 export interface Config {
   // 入口文件路径 index.ts / index.js / index.tsx / index.jsx
@@ -20,22 +22,7 @@ export interface Config {
   };
 }
 
-const resultDir = path.join(process.cwd(), '.fura');
-
-try {
-  fs.readdirSync(resultDir);
-} catch (error) {
-  fs.mkdirSync(resultDir);
-}
-
-function setDiskCache<T extends Record<string, any> = any>(
-  filename: string,
-  data: T,
-) {
-  fs.writeFileSync(path.join(resultDir, filename), JSON.stringify(data));
-}
-
-function main(config: Config) {
+async function main(config: Config) {
   console.time('程序执行完成');
   let targetDir = config.entryDir;
 
@@ -46,8 +33,14 @@ function main(config: Config) {
   // 分析js引用
   const analysisJS = new AnalysisJS(targetDir, config.options);
 
-  setDiskCache('result.json', analysisJS.result);
-  setDiskCache('unused.json', [...analysisJS.unUsedFiles]);
+  const result = await analysisJS.analysis();
+
+  diskCache.writeFileSync('result.json', JSON.stringify(result));
+  diskCache.writeFileSync(
+    'unused.json',
+    JSON.stringify([...analysisJS.unUsedFiles]),
+  );
+
   console.timeEnd('程序执行完成');
 }
 

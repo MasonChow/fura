@@ -39,6 +39,9 @@
   "dependencies": {
     "@babel/parser": "^7.20.3",
     "@babel/traverse": "^7.20.5",
+    "@types/better-sqlite3": "^7.6.2",
+    "better-sqlite3": "^8.0.1",
+    "knex": "^2.3.0",
     "lodash": "^4.17.21"
   }
 }

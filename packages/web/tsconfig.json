@@ -12,7 +12,9 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "module": "esnext",
+    "target": "ESNext",
   },
   "include": [
     "next-env.d.ts",
