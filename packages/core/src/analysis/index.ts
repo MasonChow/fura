@@ -4,7 +4,6 @@
  */
 
 import cloneDeep from 'lodash/cloneDeep';
-import keyBy from 'lodash/keyBy';
 import { Translator, TranslatorType } from '../parser';
 import { path } from '../helper/fileReader';
 import diskCache from '../helper/diskCache';
@@ -13,7 +12,7 @@ import { DatabaseTable, Database } from '../helper/database';
 
 type Options = {
   exclude?: string[];
-  // 项目唯一标识符，默认local
+  // 项目唯一标识符，默认data
   project?: string;
 } & TranslatorType['options'];
 
@@ -54,6 +53,15 @@ class AnalysisJS {
 
   public result: ReturnType<typeof this.analysis> = Object.create(null);
 
+  // DB里面储存的文件map
+  private dbIdCache:
+    | {
+        file: Record<string, number>;
+        dir: Record<string, number>;
+        npmPkg: Record<string, number>;
+      }
+    | undefined = undefined;
+
   // 实例化
   constructor(targetDir: string, options?: Options) {
     console.info('开始实例化');
@@ -76,22 +84,32 @@ class AnalysisJS {
     this.options = options;
     // 初始化DB
     this.DB = new Database(
-      diskCache.createFilePath(`${options?.project || 'local'}.db`),
+      diskCache.createFilePath(`${options?.project || 'data'}.db`),
       true,
     );
 
-    this.dir = utils.getDirFiles(this.targetDir, this.options?.exclude);
+    this.dir = utils.getDirFiles(this.targetDir, [
+      'node_modules',
+      ...(this.options?.exclude || []),
+    ]);
 
     console.timeEnd('实例化完成');
   }
 
-  // 写入基本信息
+  // 把文件基本信息写入数据库
   public async insertBaseData() {
     // 目标文件map
-    const dir = utils.getDirFiles(this.targetDir, this.options?.exclude);
+    const dir = utils.getDirFiles(this.targetDir, [
+      'node_modules',
+      ...(this.options?.exclude || []),
+    ]);
+
+    const pkg = utils.getProjectNPMPackages(this.targetDir || '.');
 
     const tableDirs: Array<Partial<DatabaseTable['dir']>> = [];
     const tableFiles: Array<Partial<DatabaseTable['file']>> = [];
+    const tableNpmPkgs: Array<Partial<DatabaseTable['npm_pkg']>> =
+      Object.entries(Object.fromEntries(pkg)).map(([, value]) => value);
     const dirFileRelations: Record<string, string[]> = Object.create(null);
 
     // 循环处理
@@ -131,18 +149,43 @@ class AnalysisJS {
 
     loopNode(dir.dirTree);
 
+    console.time('写入基础数据');
     await Promise.all([
       this.DB.inserts('dir', tableDirs),
       this.DB.inserts('file', tableFiles),
+      this.DB.inserts('npm_pkg', tableNpmPkgs),
     ]);
+    console.timeEnd('写入基础数据');
 
-    const [dirs, files] = await Promise.all([
-      this.DB.query('dir', ['*']),
-      this.DB.query('file', ['*']),
+    console.time('查询基础数据');
+    const [dirs, files, npmPkgs] = await Promise.all([
+      this.DB.query('dir', ['id', 'path']),
+      this.DB.query('file', ['id', 'path']),
+      this.DB.query('npm_pkg', ['id', 'name']),
     ]);
+    console.timeEnd('查询基础数据');
 
-    const dirMap = keyBy(dirs, 'path');
-    const fileMap = keyBy(files, 'path');
+    console.time('插入文件夹与文件关系数据');
+    const dirMap = dirs.reduce((pre, cur) => {
+      pre[cur.path] = cur.id;
+      return pre;
+    }, {} as Record<string, number>);
+
+    const fileMap = files.reduce((pre, cur) => {
+      pre[cur.path] = cur.id;
+      return pre;
+    }, {} as Record<string, number>);
+
+    const npmPkgMap = npmPkgs.reduce((pre, cur) => {
+      pre[cur.name] = cur.id;
+      return pre;
+    }, {} as Record<string, number>);
+
+    this.dbIdCache = {
+      file: fileMap,
+      dir: dirMap,
+      npmPkg: npmPkgMap,
+    };
 
     await Promise.all(
       Object.keys(dirFileRelations).map((dirPath) => {
@@ -152,14 +195,82 @@ class AnalysisJS {
 
         dirFiles.forEach((filePath) => {
           relations.push({
-            dir_id: dirMap[dirPath]?.id || 0,
-            file_id: fileMap[filePath]?.id || 0,
+            dir_id: dirMap[dirPath] || 0,
+            file_id: fileMap[filePath] || 0,
           });
         });
 
         return this.DB.inserts('dir_file_relation', relations);
       }),
     );
+    console.timeEnd('插入文件夹与文件关系数据');
+  }
+
+  private getNpmPackageId(itemPath: string) {
+    const { dbIdCache } = this;
+
+    if (!dbIdCache) {
+      throw new Error('请先调用analysis进行基础数据录入');
+    }
+
+    const { npmPkg } = dbIdCache;
+
+    let id = 0;
+    const splitPath = itemPath.split('/');
+    let testPath = splitPath[0];
+
+    for (let index = 1; index <= splitPath.length; index++) {
+      if (npmPkg[testPath]) {
+        id = npmPkg[testPath];
+        break;
+      }
+      testPath = [testPath, splitPath[index]].join('/');
+    }
+
+    if (id) {
+      return {
+        id,
+        type: 'npm',
+      } as const;
+    }
+
+    return null;
+  }
+
+  private getDBIdByPath(itemPath: string) {
+    const { dbIdCache } = this;
+
+    if (!dbIdCache) {
+      throw new Error('请先调用analysis进行基础数据录入');
+    }
+
+    if (dbIdCache.file[itemPath]) {
+      return {
+        id: dbIdCache.file[itemPath],
+        type: 'file',
+      } as const;
+    }
+
+    if (dbIdCache.dir[itemPath]) {
+      return {
+        id: dbIdCache.dir[itemPath],
+        type: 'dir',
+      } as const;
+    }
+
+    const npmPackage = this.getNpmPackageId(itemPath);
+
+    if (npmPackage) {
+      return npmPackage;
+    }
+
+    return {
+      id: 0,
+      type: 'unknown',
+      remark: itemPath,
+    } as const;
+
+    // throw new Error(`查不到路径对应的id => ${itemPath}`);
   }
 
   // 分析
@@ -168,14 +279,19 @@ class AnalysisJS {
     console.time('分析内容完成');
     // 目标文件map
     await this.insertBaseData();
+
     // 初始化分析
-    this.dir.files.forEach((key) => {
-      // 解析JS
-      if (utils.isJsTypeFile(key)) {
-        const file = this.dir.filesMap.get(key)!;
-        this.analysisFile(file);
-      }
-    });
+    await Promise.all(
+      this.dir.files.map((key) => {
+        // 解析JS
+        if (utils.isJsTypeFile(key)) {
+          const file = this.dir.filesMap.get(key)!;
+          return this.analysisFile(file);
+        }
+
+        return null;
+      }),
+    );
 
     const unusedFiles = this.analysisUnusedFiles();
     const { dirTree, filesMap, dirMap, files } = this.dir;
@@ -244,7 +360,8 @@ class AnalysisJS {
   }
 
   private isDirFile(filePath: string) {
-    return this.dir.filesMap.has(filePath);
+    // return this.dir.filesMap.has(filePath);
+    return Boolean(this.dbIdCache?.file[filePath]);
   }
 
   private getAnalysisFile(filePath: string) {
@@ -264,32 +381,33 @@ class AnalysisJS {
   }
 
   // 插入关系链数据
-  private insertRelationVal(params: {
-    targetPath: string;
-    type: keyof Pick<AnalysisFileInfo, 'imports' | 'users'>;
-    insertValue: string;
-  }) {
-    const { targetPath, type, insertValue } = params;
-    const target = this.getAnalysisFile(targetPath);
-    const prevData = target[type] || [];
+  // private insertRelationVal(params: {
+  //   targetPath: string;
+  //   type: keyof Pick<AnalysisFileInfo, 'imports' | 'users'>;
+  //   insertValue: string;
+  // }) {
+  //   const { targetPath, type, insertValue } = params;
+  //   const target = this.getAnalysisFile(targetPath);
+  //   const prevData = target[type] || [];
 
-    prevData.push(insertValue);
+  //   prevData.push(insertValue);
 
-    this.setAnalysisFile(targetPath, {
-      [type]: prevData,
-    });
-  }
+  //   this.setAnalysisFile(targetPath, {
+  //     [type]: prevData,
+  //   });
+  // }
 
   /**
    * @function 设置文件之间的依赖数据
    * @author Mason
    * @private
    */
-  private setFileRelations(
+  private async setFileRelations(
     file: FileType,
     relations: ReturnType<TranslatorType['translateJS']>['imports'] = [],
   ) {
     const filePath = file.path;
+    const fileReferences: Array<Partial<DatabaseTable['file_reference']>> = [];
     // 记录使用的数据
     relations.forEach((e) => {
       let { sourcePath } = e;
@@ -312,20 +430,28 @@ class AnalysisJS {
         sourcePath = this.getDirIndexFile(sourcePath);
       }
 
-      // 写入使用的
-      this.insertRelationVal({
-        targetPath: filePath,
-        type: 'imports',
-        insertValue: sourcePath,
+      const refInfo = this.getDBIdByPath(sourcePath);
+      const fileId = this.getDBIdByPath(filePath).id;
+
+      const isFilePkg = refInfo.type === 'file';
+
+      fileReferences.push({
+        file_id: fileId,
+        ref_id: refInfo.id,
+        type: refInfo.type === 'dir' ? 'unknown' : refInfo.type,
+        remark: (refInfo.type === 'unknown' && refInfo.remark) || undefined,
       });
 
-      // 写入被使用的
-      this.insertRelationVal({
-        targetPath: sourcePath,
-        type: 'users',
-        insertValue: filePath,
-      });
+      if (isFilePkg) {
+        fileReferences.push({
+          file_id: refInfo.id,
+          ref_id: fileId,
+          type: 'file',
+        });
+      }
     });
+
+    await this.DB.inserts('file_reference', fileReferences);
   }
 
   /**
@@ -386,13 +512,13 @@ class AnalysisJS {
   }
 
   // 分析数据
-  private analysisFile(file: FileType) {
+  private async analysisFile(file: FileType) {
     const filePath = file.path;
 
     const translator = new Translator({ filePath }, this.options);
     const { imports, comments } = translator.translateJS();
 
-    this.setFileRelations(file, imports);
+    await this.setFileRelations(file, imports);
     this.setFileDescription(file, comments);
   }
 

@@ -5,7 +5,7 @@ import * as UtilTypes from '../typings/utils';
 export * as UtilTypes from '../typings/utils';
 
 // js文件后缀类型
-export const jsFileSuffix = ['js', 'jsx', 'ts', 'tsx'] as const;
+export const jsFileSuffix = ['js', 'jsx', 'ts', 'tsx', 'd.ts'] as const;
 
 /**
  * 是否js类型的文件
@@ -14,13 +14,16 @@ export const jsFileSuffix = ['js', 'jsx', 'ts', 'tsx'] as const;
  * 2. 非*.d.ts文件
  */
 export function isJsTypeFile(fileName: string): boolean {
-  if (/(.*)\.d\.ts/.test(fileName)) {
+  // 去掉由于路径的影响
+  const [testFileName = ''] = fileName.split('/').reverse();
+
+  if (/(.*)\.d\.ts/.test(testFileName)) {
     return false;
   }
 
   const testJsFileReg = new RegExp(`.(${jsFileSuffix.join('|')})$`);
 
-  return testJsFileReg.test(fileName);
+  return testJsFileReg.test(testFileName);
 }
 
 export function getFileType(fileName: string): UtilTypes.FileType {
@@ -73,12 +76,54 @@ export function formatFileSize(size: number): string {
   return `${(size / Math.pow(base, 4)).toFixed(2)}TB`;
 }
 
+export function getProjectNPMPackages(rootDir: string) {
+  const fileName = fs
+    .readdirSync(rootDir)
+    .find((name) => name === 'package.json');
+  const packageMap = new Map<
+    string,
+    {
+      name: string;
+      version: string;
+      type: 'dependencies' | 'devDependencies';
+    }
+  >();
+
+  if (fileName) {
+    const packagePath = path.join(rootDir, fileName);
+    const packageData = JSON.parse(fs.readFileSync(packagePath).toString());
+
+    const { devDependencies = {}, dependencies = {} } = packageData;
+
+    Object.keys(devDependencies).forEach((key) => {
+      packageMap.set(key, {
+        name: key,
+        version: devDependencies[key],
+        type: 'devDependencies',
+      });
+    });
+
+    Object.keys(dependencies).forEach((key) => {
+      packageMap.set(key, {
+        name: key,
+        version: dependencies[key],
+        type: 'dependencies',
+      });
+    });
+  }
+
+  return packageMap;
+}
+
 /**
  * 获取目标目录下所有文件的Map
  */
 export function getDirFiles(rootDir: string, exclude?: string[]) {
   const filesMap: Map<string, UtilTypes.DirFilesType> = new Map();
   const dirMap: Map<string, UtilTypes.DirType> = new Map();
+  // const matchReg = exclude
+  //   ? new RegExp(`^${rootDir}/(${exclude.join('|')})`)
+  //   : null;
 
   function addDirUsageInfo(
     dirPath: string,
@@ -125,13 +170,13 @@ export function getDirFiles(rootDir: string, exclude?: string[]) {
         isRootParent: dir === rootDir,
         parentPath: dir,
       };
-      // 不解析排除的文件夹
+
       if (exclude?.includes(name)) {
         return;
       }
 
       // 如果是文件夹则继续递归
-      if (fileStat.isDirectory()) {
+      if (fileStat.isDirectory() && !name.startsWith('.')) {
         dirMap.set(pathname, {
           ...baseInfo,
           ...parentInfo,

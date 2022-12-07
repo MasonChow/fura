@@ -25,6 +25,10 @@ export default class Translator {
   }
 
   translateJS(): TranslateResult {
+    if (!this.ast) {
+      throw new Error('解析失败');
+    }
+
     return jsTranslator(this.ast, this.options);
   }
 }

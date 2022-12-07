@@ -23,14 +23,19 @@ export function parseContent(content: string) {
 
 // 异步方式
 export function parseAsync(source: TranslatorSource) {
-  if (source.content !== undefined) {
-    return parseContent(source.content);
-  }
+  try {
+    if (source.content !== undefined) {
+      return parseContent(source.content);
+    }
 
-  if (source.filePath !== undefined) {
-    const content = fs.readFileSync(source.filePath).toString();
-    return parseContent(content);
-  }
+    if (source.filePath !== undefined) {
+      const content = fs.readFileSync(source.filePath).toString();
+      return parseContent(content);
+    }
 
-  throw new Error('需要传入content或者filePath');
+    throw new Error('需要传入content或者filePath');
+  } catch (error: any) {
+    console.log(`解析文件失败 ${JSON.stringify(source)}`, error.message);
+    throw new Error('解析文件失败');
+  }
 }
