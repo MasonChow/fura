@@ -6,6 +6,7 @@ export interface Table {
     id: number;
     name: string;
     path: string;
+    parent_path: string;
     size: number;
     type: FileType;
   };
@@ -14,6 +15,7 @@ export interface Table {
     id: number;
     name: string;
     path: string;
+    parent_path: string;
     depth: number;
   };
 
@@ -29,6 +31,7 @@ export interface Table {
     dir_id: number;
     file_id: number;
   };
+
   /** 文件引用关系表 */
   file_reference: {
     id: number;
@@ -36,6 +39,15 @@ export interface Table {
     ref_id: number;
     remark: string;
     type: 'file' | 'npm' | 'unknown';
+  };
+
+  /** 文件属性表 */
+  file_attr: {
+    id: number;
+    file_id: number;
+    parent_key: string;
+    key: string;
+    value: string | null;
   };
 }
 
@@ -86,4 +98,13 @@ export const createTables = [
       version TEXT NOT NULL,
       type TEXT NOT NULL
     );`,
+  // 新增表
+  `CREATE TABLE IF NOT EXISTS file_attr (
+    /** 自增id */
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    file_id INTEGER NOT NULL,
+    parent_key TEXT ALLOW NULL,
+    key TEXT NOT NULL,
+    value TEXT DEFAULT ''
+  );`,
 ];

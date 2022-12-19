@@ -140,6 +140,10 @@ export class Database {
     return this.knex(tableName).where(where).delete();
   }
 
+  public useSql<T extends Object>(sql: string) {
+    return this.knex.raw<T[]>(sql);
+  }
+
   /**
    * @description 获取knex实例，一般用于做复杂的sql查询
    * @readonly

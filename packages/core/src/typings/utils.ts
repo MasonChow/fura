@@ -10,7 +10,7 @@ export interface DirType {
   // 文件夹id
   id: string;
   // 父级路径
-  parentPath: null | string;
+  parentPath: string;
   // 父级是否根目录
   isRootParent: boolean;
   // 文件数量
@@ -33,7 +33,7 @@ export interface DirFilesType {
   // 文件id
   id: string;
   // 父级路径
-  parentPath: null | string;
+  parentPath: string;
   // 父级是否根目录
   isRootParent: boolean;
   // 格式化后文件大小 *B/*KB/*MB/*GB/*TB

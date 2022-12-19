@@ -121,9 +121,6 @@ export function getProjectNPMPackages(rootDir: string) {
 export function getDirFiles(rootDir: string, exclude?: string[]) {
   const filesMap: Map<string, UtilTypes.DirFilesType> = new Map();
   const dirMap: Map<string, UtilTypes.DirType> = new Map();
-  // const matchReg = exclude
-  //   ? new RegExp(`^${rootDir}/(${exclude.join('|')})`)
-  //   : null;
 
   function addDirUsageInfo(
     dirPath: string,
@@ -143,10 +140,7 @@ export function getDirFiles(rootDir: string, exclude?: string[]) {
     dir.files.push(file.id);
     dir.totalFormatSize = formatFileSize(dir.totalSize);
     dirMap.set(dirPath, dir);
-
-    if (dir.parentPath) {
-      addDirUsageInfo(dir.parentPath, file);
-    }
+    addDirUsageInfo(dir.parentPath, file);
   }
 
   function reader(dir: string, depth = 0) {
