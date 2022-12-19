@@ -38,9 +38,6 @@ interface DataCacheType {
 // }
 
 class AnalysisJS {
-  // 读取的文件夹的内容
-  // private dir: ReturnType<typeof utils.getDirFiles>;
-
   // 配置项
   private options?: Options;
 
@@ -48,7 +45,7 @@ class AnalysisJS {
   private targetDir: string;
 
   // 储存
-  private DB: Database;
+  private DB!: Database;
 
   public unUsedFiles: Set<string> = new Set();
 
@@ -77,17 +74,13 @@ class AnalysisJS {
     // 写入配置
     this.options = options;
     // 初始化DB
-    this.DB = new Database(
-      diskCache.createFilePath(`${options?.project || 'data'}.db`),
-      true,
-    );
-
-    // this.dir = utils.getDirFiles(this.targetDir, [
-    //   'node_modules',
-    //   ...(this.options?.exclude || []),
-    // ]);
+    this.initDB(options?.project);
 
     console.timeEnd('实例化完成');
+  }
+
+  private initDB(project = this.options?.project || 'data') {
+    this.DB = new Database(diskCache.createFilePath(`${project}.db`), true);
   }
 
   get db() {
@@ -95,7 +88,12 @@ class AnalysisJS {
   }
 
   // 把文件基本信息写入数据库
-  public async insertBaseData() {
+  public async initBaseDataIntoDB() {
+    // 如果有缓存则清除
+    if (this.dataCache) {
+      this.initDB();
+      this.dataCache = undefined;
+    }
     // 目标文件map
     const dir = utils.getDirFiles(this.targetDir, [
       'node_modules',
@@ -208,6 +206,8 @@ class AnalysisJS {
       }),
     );
     console.timeEnd('插入文件夹与文件关系数据');
+
+    return this.dataCache;
   }
 
   private getNpmPackageId(itemPath: string) {
@@ -281,34 +281,21 @@ class AnalysisJS {
 
   // 分析
   public async analysis() {
-    console.time('分析内容');
     console.time('分析内容完成');
     // 目标文件map
-    await this.insertBaseData();
+    const { file } = await this.initBaseDataIntoDB();
 
-    // Object.keys(this.dataCache?.file || {}).map((path) => {
-    //     // 解析JS
-    //     if (utils.isJsTypeFile(path)) {
-    //       const file = this.dir.filesMap.get(key)!;
-    //       return this.analysisFile(file);
-    //     }
+    await Promise.all(
+      Object.keys(file).map((filePath: string) => {
+        // 解析JS
+        if (utils.isJsTypeFile(filePath)) {
+          // const file = this.dir.filesMap.get(key)!;
+          return this.analysisFile(filePath);
+        }
 
-    //     return null;
-
-    // });
-
-    // 初始化分析
-    // await Promise.all(
-    //   this.dir.files.map((key) => {
-    //     // 解析JS
-    //     if (utils.isJsTypeFile(key)) {
-    //       const file = this.dir.filesMap.get(key)!;
-    //       return this.analysisFile(file);
-    //     }
-
-    //     return null;
-    //   }),
-    // );
+        return null;
+      }),
+    );
     console.timeEnd('分析内容完成');
   }
 

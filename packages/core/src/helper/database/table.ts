@@ -1,6 +1,6 @@
 import { FileType } from '../../typings/utils';
 
-/** 表格定义 */
+/** 表格定义，新增记得检查对应的 create sql */
 export interface Table {
   file: {
     id: number;
@@ -57,6 +57,7 @@ export const createTables = [
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     path TEXT NOT NULL,
+    parent_path TEXT NOT NULL,
     type TEXT NOT NULL,
     /** 文件大小 单位b */
     size INTEGER DEFAULT 0);`,
@@ -67,6 +68,7 @@ export const createTables = [
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     path TEXT NOT NULL,
+    parent_path TEXT NOT NULL,
     depth INTEGER NOT NULL);`,
   // 创建文件夹表索引
   `CREATE UNIQUE INDEX dir_uniq_path on dir (path);`,
