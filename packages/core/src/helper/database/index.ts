@@ -3,7 +3,6 @@ import knex, { Knex } from 'knex';
 import fs from 'fs';
 
 import { createTables, Table } from './table';
-import diskCache from '../diskCache';
 
 export type DatabaseTable = Table;
 
@@ -95,25 +94,13 @@ export class Database {
     insertData: W[],
   ) {
     // 由于sqlite批量插入200+会报错，暂时用单条插入的情况处理
+    const result = await Promise.all(
+      insertData.map((data) => {
+        return this.insert(tableName, data);
+      }),
+    );
 
-    try {
-      const result = await Promise.all(
-        insertData.map((data) => {
-          return this.insert(tableName, data);
-        }),
-      );
-
-      return result;
-    } catch (error) {
-      console.log(error);
-      // console.log(insertData);
-      diskCache.writeFileSync(
-        `${tableName}_inserts.json`,
-        JSON.stringify(insertData),
-      );
-      return [];
-    }
-
+    return result;
     // return this.knex(tableName).insert(insertData);
   }
 

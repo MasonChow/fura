@@ -11,8 +11,6 @@ export interface DirType {
   id: string;
   // 父级路径
   parentPath: string;
-  // 父级是否根目录
-  isRootParent: boolean;
   // 文件数量
   fileCount: number;
   // 总大小

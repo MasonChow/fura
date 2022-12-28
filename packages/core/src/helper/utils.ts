@@ -121,6 +121,31 @@ export function getProjectNPMPackages(rootDir: string) {
 export function getDirFiles(rootDir: string, exclude?: string[]) {
   const filesMap: Map<string, UtilTypes.DirFilesType> = new Map();
   const dirMap: Map<string, UtilTypes.DirType> = new Map();
+  const [rootDirName, ...parentPaths] = rootDir.split('/').reverse();
+  const rootDirParentPath = parentPaths.reverse().join('/');
+
+  function addDirInfo(
+    dirPath: string,
+    info: {
+      dirName: string;
+      parentPath: string;
+      depth?: number;
+    },
+  ) {
+    const { depth = 0, parentPath, dirName } = info;
+
+    dirMap.set(dirPath, {
+      id: dirPath,
+      path: dirPath,
+      parentPath,
+      dirName,
+      totalSize: 0,
+      fileCount: 0,
+      depth,
+      totalFormatSize: formatFileSize(0),
+      files: [],
+    });
+  }
 
   function addDirUsageInfo(
     dirPath: string,
@@ -151,6 +176,7 @@ export function getDirFiles(rootDir: string, exclude?: string[]) {
       type: 'dir',
       children: [],
     };
+
     fs.readdirSync(dir).forEach((name) => {
       const pathname = path.join(dir, name);
       const fileStat = fs.statSync(pathname);
@@ -171,15 +197,10 @@ export function getDirFiles(rootDir: string, exclude?: string[]) {
 
       // 如果是文件夹则继续递归
       if (fileStat.isDirectory() && !name.startsWith('.')) {
-        dirMap.set(pathname, {
-          ...baseInfo,
-          ...parentInfo,
+        addDirInfo(pathname, {
           dirName: name,
-          totalSize: 0,
-          fileCount: 0,
+          parentPath: dir,
           depth,
-          totalFormatSize: formatFileSize(0),
-          files: [],
         });
 
         fileTree.children?.push(reader(pathname, depth + 1));
@@ -204,7 +225,12 @@ export function getDirFiles(rootDir: string, exclude?: string[]) {
     return fileTree;
   }
 
-  const dirTree: UtilTypes.DirFilesTree = reader(rootDir);
+  addDirInfo(rootDir, {
+    dirName: rootDirName,
+    parentPath: rootDirParentPath,
+    depth: 0,
+  });
+  const dirTree: UtilTypes.DirFilesTree = reader(rootDir, 1);
   const files: string[] = [...filesMap.keys()];
 
   return {

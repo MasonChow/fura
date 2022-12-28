@@ -47,8 +47,6 @@ class AnalysisJS {
   // 储存
   private DB!: Database;
 
-  public unUsedFiles: Set<string> = new Set();
-
   // DB里面储存的文件map
   private dataCache: DataCacheType | undefined = undefined;
 
