@@ -12,8 +12,9 @@ import * as utils from '../helper/utils';
 import { DatabaseTable, Database } from '../helper/database';
 
 type Options = {
+  /** 需要排除的文件目录 */
   exclude?: string[];
-  // 项目唯一标识符，默认data
+  /** 项目唯一标识符，默认data */
   project?: string;
 } & TranslatorType['options'];
 
@@ -23,28 +24,21 @@ interface DataCacheType {
   npmPkg: Record<string, { id: number }>;
 }
 
-// interface AnalysisFileInfo {
-//   // 引用的
-//   imports: string[];
-//   // 使用方
-//   users: string[];
-//   // 描述信息
-//   description: {
-//     type: 'page' | 'module';
-//     name: string;
-//     props: Record<string, string>;
-//     functions: Array<{ name: string; props: Record<string, string> }>;
-//   };
-// }
+interface ProjectTreeNode {
+  id: number;
+  type: 'dir' | 'file';
+  name: string;
+  children?: Array<ProjectTreeNode & { type?: 'dir' | 'file' }>;
+}
 
 class AnalysisJS {
-  // 配置项
+  /** 配置项 */
   private options?: Options;
 
-  // 执行的文件目录
+  /** 执行的文件目录 */
   private targetDir: string;
 
-  // 储存
+  /** 数据库实例 */
   private DB!: Database;
 
   // DB里面储存的文件map
@@ -55,7 +49,6 @@ class AnalysisJS {
     console.info('开始实例化');
     console.info('目标目录:', targetDir);
     console.time('实例化完成');
-
     // 提前处理一波alias配置
     if (options?.alias) {
       // eslint-disable-next-line no-param-reassign
@@ -273,8 +266,6 @@ class AnalysisJS {
       type: 'unknown',
       remark: itemPath,
     } as const;
-
-    // throw new Error(`查不到路径对应的id => ${itemPath}`);
   }
 
   // 分析
@@ -331,8 +322,6 @@ class AnalysisJS {
 
   /**
    * @function 设置文件之间的依赖数据
-   * @author Mason
-   * @private
    */
   private async setFileRelations(
     filePath: string,
@@ -370,8 +359,6 @@ class AnalysisJS {
       }
 
       const refInfo = this.getCacheDataByPath(sourcePath);
-      // const fileId = this.getCacheDataByPath(filePath).id;
-
       const isFilePkg = refInfo.type === 'file';
 
       fileReferences.push({
@@ -448,7 +435,10 @@ class AnalysisJS {
     await this.DB.inserts('file_attr', attrs);
   }
 
-  // 分析数据
+  /**
+   * @function 分析文件
+   * @param filePath 分析文件路径
+   */
   private async analysisFile(filePath: string) {
     const translator = new Translator({ filePath }, this.options);
     const { imports, comments } = translator.translateJS();
@@ -457,25 +447,200 @@ class AnalysisJS {
     await this.setFileDescription(filePath, comments);
   }
 
+  // 获取项目文件目录树
   public async getProjectTree() {
-    const dirFiles = await this.getDirFiles();
-    const dirMap = new Map<number, { id: number; children: number[] }>();
+    const [dirs, files] = await Promise.all([
+      this.getAllDir(),
+      this.getDirFiles(),
+    ]);
 
-    const orderDir = lodash.orderBy(dirFiles, ['dir_depth'], 'desc');
+    const dirChildMap = new Map<
+      string,
+      Array<{ type: 'dir' | 'file'; path: string; name: string }>
+    >();
+    const groupFiles = lodash.groupBy(files, 'dir_path');
+    const fileMapByPath = lodash.keyBy(files, 'file_path');
+    const dirMapByPath = lodash.keyBy(dirs, 'path');
+    const sortDirByDepth = lodash.orderBy(dirs, 'depth', 'asc');
+    const rootDirs: string[] = [];
 
-    orderDir.forEach((item) => {
-      const { dir_id: dirId, file_id: fileId } = item;
-      let dir = dirMap.get(dirId);
+    // 组合一波文件夹和文件的数据id
+    sortDirByDepth.forEach((dir) => {
+      const { parent_path: parentPath, name, path: curPath, depth } = dir;
 
-      if (!dir) {
-        dir = {
-          id: dirId,
-          children: [],
-        };
+      if (depth === 0) {
+        rootDirs.push(curPath);
       }
 
-      dir.children.push(fileId);
+      if (parentPath) {
+        const parentDirChildren = dirChildMap.get(parentPath) || [];
+        parentDirChildren.push({ type: 'dir', path: curPath, name });
+        dirChildMap.set(parentPath, parentDirChildren);
+      }
+
+      dirChildMap.set(
+        curPath,
+        (groupFiles[curPath] || []).map((e) => ({
+          type: 'file',
+          path: e.file_path,
+          name: e.file_name,
+        })),
+      );
     });
+
+    /**
+     * @function 遍历node节点
+     */
+    function loopTreeNode(dirPath: string): ProjectTreeNode {
+      const children = dirChildMap.get(dirPath)!;
+      const dirInfo = dirMapByPath[dirPath]!;
+
+      return {
+        id: dirInfo.id,
+        type: 'dir',
+        name: dirInfo.name,
+        children: children?.map((e) => {
+          if (e.type === 'file') {
+            const fileInfo = fileMapByPath[e.path]!;
+            return {
+              id: fileInfo.file_id,
+              type: 'file',
+              name: fileInfo.file_name,
+            };
+          }
+
+          return loopTreeNode(e.path);
+        }),
+      };
+    }
+
+    return {
+      tree: rootDirs.map((id) => {
+        return loopTreeNode(id);
+      }),
+      fileMapByPath,
+      dirMapByPath,
+    };
+  }
+
+  /**
+   * @function 获取没被应用的依赖
+   * @description 暂时支持ts/js文件引用分析已经npm包中dependencies无被引用分析
+   */
+  public async getUnusedDeps(params: {
+    /** 分析文件夹相对与分析目标的路径路径，例如./src */
+    entryDirPath: string;
+    /** 分析文件夹的入口文件，例如./index.ts */
+    rootFilePath: string;
+  }) {
+    const [
+      // 文件依赖关系
+      fileRefs,
+      // 项目的js文件
+      dirFiles,
+      // 项目npm包
+      npmPkgs,
+    ] = await Promise.all([
+      this.getFileReference(),
+      this.getDirFiles(),
+      this.getNpmPkgs(),
+    ]);
+    // 分析入口的目录，使用绝对路径 一般就是{project}/src
+    const rootDirPath = path.join(this.targetDir, params.entryDirPath);
+    // 分析入口的文件 使用绝对路径 一般就是{project}/src/index.ts
+    const rootFilePath = path.join(rootDirPath, params.rootFilePath);
+    // 过滤掉不需要分析的文件(目标文件策略: 文件路径以分析入口目录开头且js/ts类型的文件)
+    const filterFiles = dirFiles.filter((dirFile) => {
+      return (
+        dirFile.file_path.startsWith(rootDirPath) &&
+        ['js', 'ts'].includes(dirFile.file_type)
+      );
+    });
+    // 以文件维度集合引用的内容
+    const filesMap = lodash.keyBy(filterFiles, 'file_id');
+    // 被使用的文件集合，默认全部文件
+    const usedFiles = new Set<number>(filterFiles.map((item) => item.file_id));
+    // 通过递归把子都没被引用的父级也收集起来
+    function loop(refs: typeof fileRefs) {
+      let hasUnUsedFiles = false;
+      // 被引用的file集合
+      const refsFileMap = lodash.groupBy(refs, 'ref_id');
+      // 有效的关系数据
+      const usableRefs: typeof refs = [];
+      // 循环处理一次文件，添加未被引用的文件
+      [...usedFiles].forEach((fileId) => {
+        // 非入口文件以及不存在被引用则表明自身已经是没用了
+        if (
+          !refsFileMap[fileId] &&
+          filesMap[fileId].file_path !== rootFilePath
+        ) {
+          usedFiles.delete(fileId);
+          hasUnUsedFiles = true;
+        }
+        // 又被引用则记录到被使用的数组里面
+        else {
+          refsFileMap[fileId].forEach((ref) => {
+            usableRefs.push(ref);
+          });
+        }
+      });
+      if (hasUnUsedFiles) {
+        loop(usableRefs);
+      }
+    }
+    // 递归执行
+    loop(fileRefs);
+    // 获取未使用的文件信息
+    const files = await this.getFilesByIds(
+      Object.keys(filesMap)
+        .filter((key) => !usedFiles.has(Number(key)))
+        .map(Number),
+    );
+    // 未使用的npm包列表
+    const npmRefsMap = lodash.groupBy(
+      fileRefs.filter((refs) => refs.type === 'npm'),
+      'ref_id',
+    );
+    const unUsedNpmPkgs = Object.entries(npmRefsMap).reduce(
+      (prev, [key, refFiles]) => {
+        const npmPkgId = Number(key);
+
+        if (
+          !refFiles.length ||
+          !refFiles.some((refFile) => usedFiles.has(refFile.file_id))
+        ) {
+          prev.add(npmPkgId);
+        }
+
+        return prev;
+      },
+      new Set<number>(),
+    );
+
+    return {
+      files,
+      npmPkgs: npmPkgs.filter((npmPkg) => {
+        // if (npmPkg.name === '@sentry/browser') {
+        //   console.log('debugger');
+
+        //   console.log(unUsedNpmPkgs.has(npmPkg.id));
+        //   console.log(npmRefsMap[npmPkg.id]);
+        // }
+
+        return (
+          (unUsedNpmPkgs.has(npmPkg.id) || !npmRefsMap[npmPkg.id]) &&
+          npmPkg.type === 'dependencies'
+        );
+      }),
+    };
+  }
+
+  /**
+   * @function 获取项目内所有文件夹
+   */
+  public async getAllDir() {
+    const res = await this.db.query('dir', ['*']).orderBy('depth', 'asc');
+    return res;
   }
 
   /**
@@ -483,15 +648,15 @@ class AnalysisJS {
    */
   public async getDirFiles() {
     const res = await this.db.useSql<{
-      dir_id: number;
-      dir_name: string;
-      dir_path: string;
-      dir_depth: number;
-      file_name: string;
-      file_id: number;
-      file_size: number;
-      file_path: string;
-      file_type: string;
+      dir_id: DatabaseTable['dir']['id'];
+      dir_name: DatabaseTable['dir']['name'];
+      dir_path: DatabaseTable['dir']['path'];
+      dir_depth: DatabaseTable['dir']['depth'];
+      file_name: DatabaseTable['file']['name'];
+      file_id: DatabaseTable['file']['id'];
+      file_size: DatabaseTable['file']['size'];
+      file_path: DatabaseTable['file']['path'];
+      file_type: DatabaseTable['file']['type'];
     }>(`
       SELECT
         d.id AS dir_id,
@@ -509,6 +674,30 @@ class AnalysisJS {
         JOIN file f ON f.id = dfr.file_id;
     `);
 
+    return res;
+  }
+
+  /**
+   * @function 根据ids获取项目内文件
+   */
+  public async getFilesByIds(fileIds: number[] = []) {
+    const res = await this.db.table('file').whereIn('id', fileIds);
+    return res;
+  }
+
+  /**
+   * @function 获取所有文件依赖关系
+   */
+  public async getFileReference() {
+    const res = await this.db.query('file_reference', ['*']);
+    return res;
+  }
+
+  /**
+   * @function 获取项目的npm依赖包
+   */
+  public async getNpmPkgs() {
+    const res = await this.db.query('npm_pkg', ['*']);
     return res;
   }
 }

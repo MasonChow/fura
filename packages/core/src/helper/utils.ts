@@ -1,5 +1,4 @@
 import { fs, path } from './fileReader';
-
 import * as UtilTypes from '../typings/utils';
 
 export * as UtilTypes from '../typings/utils';
@@ -165,7 +164,7 @@ export function getDirFiles(rootDir: string, exclude?: string[]) {
     dir.files.push(file.id);
     dir.totalFormatSize = formatFileSize(dir.totalSize);
     dirMap.set(dirPath, dir);
-    addDirUsageInfo(dir.parentPath, file);
+    // addDirUsageInfo(dir.parentPath, file);
   }
 
   function reader(dir: string, depth = 0) {

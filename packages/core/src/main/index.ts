@@ -1,4 +1,5 @@
 import AnalysisJS from '../analysis';
+import diskCache from '../helper/diskCache';
 
 export interface Config {
   // 分析入口目录 默认 .
@@ -24,11 +25,14 @@ class Main {
 
   public async run() {
     await this.analysisJS.analysis();
+    const tree = await this.analysisJS.getProjectTree();
+    const unUsed = await this.analysisJS.getUnusedDeps({
+      entryDirPath: './src',
+      rootFilePath: 'index.tsx',
+    });
+    diskCache.writeFileSync('tree.json', JSON.stringify(tree));
+    diskCache.writeFileSync('unUsed.json', JSON.stringify(unUsed));
   }
-
-  // public async getUnusedFiles() {
-
-  // }
 }
 
 export default Main;
