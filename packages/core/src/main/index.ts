@@ -1,4 +1,4 @@
-import AnalysisJS from '../analysis';
+import Analysis from '../analysis';
 import diskCache from '../helper/diskCache';
 
 export interface Config {
@@ -14,19 +14,16 @@ export interface Config {
 }
 
 class Main {
-  private analysisJS: AnalysisJS;
+  private analysis: Analysis;
 
   constructor(config: Config) {
-    this.analysisJS = new AnalysisJS(
-      config.cwd || process.cwd(),
-      config.options,
-    );
+    this.analysis = new Analysis(config.cwd || process.cwd(), config.options);
   }
 
   public async run() {
-    await this.analysisJS.analysis();
-    const tree = await this.analysisJS.getProjectTree();
-    const unUsed = await this.analysisJS.getUnusedDeps({
+    await this.analysis.analysis();
+    const tree = await this.analysis.getProjectTree();
+    const unUsed = await this.analysis.getUnusedDeps({
       entryDirPath: './src',
       rootFilePath: 'index.tsx',
     });

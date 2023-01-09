@@ -359,22 +359,12 @@ class AnalysisJS {
       }
 
       const refInfo = this.getCacheDataByPath(sourcePath);
-      const isFilePkg = refInfo.type === 'file';
-
       fileReferences.push({
         file_id: fileId,
         ref_id: refInfo.id,
         type: refInfo.type === 'dir' ? 'unknown' : refInfo.type,
         remark: (refInfo.type === 'unknown' && refInfo.remark) || undefined,
       });
-
-      if (isFilePkg) {
-        fileReferences.push({
-          file_id: refInfo.id,
-          ref_id: fileId,
-          type: 'file',
-        });
-      }
     });
 
     await this.DB.inserts('file_reference', fileReferences);
@@ -577,8 +567,8 @@ class AnalysisJS {
           usedFiles.delete(fileId);
           hasUnUsedFiles = true;
         }
-        // 又被引用则记录到被使用的数组里面
-        else {
+        // 有被引用则记录到被使用的数组里面
+        else if (refsFileMap[fileId] !== undefined) {
           refsFileMap[fileId].forEach((ref) => {
             usableRefs.push(ref);
           });
@@ -596,11 +586,12 @@ class AnalysisJS {
         .filter((key) => !usedFiles.has(Number(key)))
         .map(Number),
     );
-    // 未使用的npm包列表
+    // 已npmId归组使用关联的文件
     const npmRefsMap = lodash.groupBy(
       fileRefs.filter((refs) => refs.type === 'npm'),
       'ref_id',
     );
+    // 未使用的npm包Ids
     const unUsedNpmPkgs = Object.entries(npmRefsMap).reduce(
       (prev, [key, refFiles]) => {
         const npmPkgId = Number(key);
@@ -620,13 +611,6 @@ class AnalysisJS {
     return {
       files,
       npmPkgs: npmPkgs.filter((npmPkg) => {
-        // if (npmPkg.name === '@sentry/browser') {
-        //   console.log('debugger');
-
-        //   console.log(unUsedNpmPkgs.has(npmPkg.id));
-        //   console.log(npmRefsMap[npmPkg.id]);
-        // }
-
         return (
           (unUsedNpmPkgs.has(npmPkg.id) || !npmRefsMap[npmPkg.id]) &&
           npmPkg.type === 'dependencies'
