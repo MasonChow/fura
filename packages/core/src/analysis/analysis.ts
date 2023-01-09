@@ -556,24 +556,30 @@ class AnalysisJS {
       // 被引用的file集合
       const refsFileMap = lodash.groupBy(refs, 'ref_id');
       // 有效的关系数据
-      const usableRefs: typeof refs = [];
+      let usableRefs: typeof refs = [];
       // 循环处理一次文件，添加未被引用的文件
       [...usedFiles].forEach((fileId) => {
-        // 非入口文件以及不存在被引用则表明自身已经是没用了
-        if (
-          !refsFileMap[fileId] &&
-          filesMap[fileId].file_path !== rootFilePath
-        ) {
+        // 如果是入口文件则不处理
+        if (filesMap[fileId]?.file_path === rootFilePath) {
+          return;
+        }
+
+        // 不存在被引用则表明自身已经是没用了
+        if (!refsFileMap[fileId]) {
           usedFiles.delete(fileId);
           hasUnUsedFiles = true;
         }
         // 有被引用则记录到被使用的数组里面
-        else if (refsFileMap[fileId] !== undefined) {
+        else {
           refsFileMap[fileId].forEach((ref) => {
             usableRefs.push(ref);
           });
         }
       });
+
+      // 循环完成处理后，二次过滤一遍已经无效的文件，如果在循环里面处理可能由于有处理顺序问题导致过滤失败
+      usableRefs = usableRefs.filter((e) => usedFiles.has(e.file_id));
+
       if (hasUnUsedFiles) {
         loop(usableRefs);
       }
