@@ -12,7 +12,42 @@ export interface TranslatorOptions {
   alias?: Record<string, string>;
 }
 
-export function translator(ast: AST, option: TranslatorOptions = {}) {
+export interface ImportType {
+  /** 类型，dynamicImport(import(x).then) | import(import x from x)  */
+  type: 'dynamicImport' | 'import';
+  /** 引入的模块 */
+  modules?: string[] | undefined;
+  /** 引入的路径 */
+  sourcePath: string;
+}
+
+export interface CommentBlockType {
+  /** 块状注释类型 */
+  type: 'block';
+  /** 解析内容 */
+  content: string;
+  /** 属性值 @xxx 222 => {xxx: 222} */
+  props: Record<string, string>;
+}
+
+export interface CommentLineType {
+  /** 行内内注释类型 例如 // */
+  type: 'line';
+  /** 解析内容 */
+  content: string;
+}
+
+export interface TranslatorReturnType {
+  /** 文件导入内容 */
+  imports: Array<ImportType>;
+  /** 文件评论 */
+  comments: Array<CommentBlockType | CommentLineType>;
+}
+
+export function translator(
+  ast: AST,
+  option: TranslatorOptions = {},
+): TranslatorReturnType {
   const { alias = {} } = option;
 
   const result: Array<{

@@ -22,13 +22,11 @@ class Main {
 
   public async run() {
     await this.analysis.analysis();
-    const tree = await this.analysis.getProjectTree();
-    const unUsed = await this.analysis.getUnusedDeps({
-      entryDirPath: './src',
-      rootFilePath: 'index.tsx',
-    });
-    diskCache.writeFileSync('tree.json', JSON.stringify(tree));
-    diskCache.writeFileSync('unUsed.json', JSON.stringify(unUsed));
+    const { id } = this.analysis.getCacheDataByPath(
+      '/Users/zhoushunming/Documents/mason/fura/packages/core/src/analysis/analysis.ts',
+    );
+    const test = await this.analysis.getFileAttrs([id]);
+    diskCache.writeFileSync('test.json', JSON.stringify(test));
   }
 }
 

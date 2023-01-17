@@ -31,6 +31,13 @@ interface ProjectTreeNode {
   children?: Array<ProjectTreeNode & { type?: 'dir' | 'file' }>;
 }
 
+interface FileAttr {
+  type: 'page' | 'module';
+  name: string;
+  description: string;
+  functions: Array<{ name: string; description: string }>;
+}
+
 class AnalysisJS {
   /** 配置项 */
   private options?: Options;
@@ -232,7 +239,7 @@ class AnalysisJS {
     return null;
   }
 
-  private getCacheDataByPath(itemPath: string) {
+  public getCacheDataByPath(itemPath: string) {
     const { dataCache } = this;
 
     if (!dataCache) {
@@ -386,11 +393,9 @@ class AnalysisJS {
     const attrs: Array<Partial<DatabaseTable['file_attr']>> = [];
 
     function appendAttrs(
-      key: string,
-      value: string,
-      parentKey?: 'props' | 'functions',
+      params: Pick<typeof attrs[0], 'type' | 'name' | 'description'>,
     ) {
-      attrs.push({ key, value, parent_key: parentKey, file_id: fileId });
+      attrs.push({ ...params, file_id: fileId });
     }
 
     comments.forEach((comment) => {
@@ -399,24 +404,33 @@ class AnalysisJS {
 
         if ((commentProps.page || commentProps.module) && !lockFileBaseProps) {
           const { page, module, ...others } = commentProps;
-          appendAttrs('type', page ? 'page' : 'module');
-          appendAttrs('name', page || module);
+          const fileType = page ? 'page' : 'module';
+          const fileName = page || module;
+
+          appendAttrs({
+            type: fileType,
+            name: fileName,
+            description: '',
+          });
+
           Object.keys(others).forEach((key) => {
-            appendAttrs(key, others[key], 'props');
+            if (key === 'function') {
+              appendAttrs({
+                type: 'function',
+                name: others[key] || [fileName, 'function'].join('-'),
+                description: '',
+              });
+            }
           });
           lockFileBaseProps = true;
           return;
         }
 
         if (commentProps.function) {
-          Object.keys(commentProps).forEach((key) => {
-            let attrKey = key;
-
-            if (key === 'function') {
-              attrKey = 'name';
-            }
-
-            appendAttrs(attrKey, commentProps[key], 'functions');
+          appendAttrs({
+            type: 'function',
+            name: commentProps.function,
+            description: '',
           });
         }
       }
@@ -631,6 +645,42 @@ class AnalysisJS {
   public async getAllDir() {
     const res = await this.db.query('dir', ['*']).orderBy('depth', 'asc');
     return res;
+  }
+
+  /**
+   * @function 批量获取文件的属性
+   * @description 传入fileIds则按需获取，否则就全量获取
+   */
+  public async getFileAttrs(fileIds: number[]) {
+    const dbRes = await this.db.table('file_attr').whereIn('file_id', fileIds);
+    // 以文件为维度，归组所有的属性数据
+    const groupByFileId = lodash.groupBy(dbRes, 'file_id');
+    const result: Record<string, FileAttr> = Object.create(dbRes);
+
+    // 遍历处理属性数据，改成对象的形式
+    Object.entries(groupByFileId).forEach(([key, attrs]) => {
+      const res: FileAttr = {
+        type: 'module',
+        name: '',
+        description: '',
+        functions: [],
+      };
+
+      attrs.forEach((attr) => {
+        const { type, name, description } = attr;
+        if (type === 'function') {
+          res.functions.push({ name, description });
+        } else {
+          res.type = type;
+          res.description = description;
+          res.name = name;
+        }
+      });
+
+      result[key] = res;
+    });
+
+    return result;
   }
 
   /**

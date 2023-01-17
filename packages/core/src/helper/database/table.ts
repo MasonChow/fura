@@ -45,9 +45,9 @@ export interface Table {
   file_attr: {
     id: number;
     file_id: number;
-    parent_key: string;
-    key: string;
-    value: string | null;
+    type: 'function' | 'module' | 'page';
+    name: string;
+    description: string;
   };
 }
 
@@ -105,8 +105,8 @@ export const createTables = [
     /** 自增id */
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     file_id INTEGER NOT NULL,
-    parent_key TEXT ALLOW NULL,
-    key TEXT NOT NULL,
-    value TEXT DEFAULT ''
+    type TEXT NOT NULL,
+    name TEXT DEFAULT '',
+    description TEXT DEFAULT ''
   );`,
 ];
