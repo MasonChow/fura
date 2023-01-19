@@ -24,14 +24,14 @@ interface DataCacheType {
   npmPkg: Record<string, { id: number }>;
 }
 
-interface ProjectTreeNode {
+export interface ProjectTreeNode {
   id: number;
   type: 'dir' | 'file';
   name: string;
   children?: Array<ProjectTreeNode & { type?: 'dir' | 'file' }>;
 }
 
-interface FileAttr {
+export interface FileAttr {
   type: 'page' | 'module';
   name: string;
   description: string;
@@ -382,7 +382,7 @@ class AnalysisJS {
    * @author Mason
    * @private
    */
-  private async setFileDescription(
+  private async setFileAttrs(
     filePath: string,
     comments: ReturnType<TranslatorType['translateJS']>['comments'] = [],
   ) {
@@ -447,14 +447,17 @@ class AnalysisJS {
     const translator = new Translator({ filePath }, this.options);
     const { imports, comments } = translator.translateJS();
 
-    await this.setFileRelations(filePath, imports);
-    await this.setFileDescription(filePath, comments);
+    await Promise.all([
+      this.setFileRelations(filePath, imports),
+      this.setFileAttrs(filePath, comments),
+    ]);
   }
 
   // 获取项目文件目录树
   public async getProjectTree() {
-    const [dirs, files] = await Promise.all([
+    const [dirs, files, dirFiles] = await Promise.all([
       this.getAllDir(),
+      this.getAllFile(),
       this.getDirFiles(),
     ]);
 
@@ -462,9 +465,11 @@ class AnalysisJS {
       string,
       Array<{ type: 'dir' | 'file'; path: string; name: string }>
     >();
-    const groupFiles = lodash.groupBy(files, 'dir_path');
-    const fileMapByPath = lodash.keyBy(files, 'file_path');
+    const groupFiles = lodash.groupBy(dirFiles, 'dir_path');
+    const fileMapByPath = lodash.keyBy(dirFiles, 'file_path');
     const dirMapByPath = lodash.keyBy(dirs, 'path');
+    const fileMapById = lodash.keyBy(files, 'id');
+    const dirMapById = lodash.keyBy(dirs, 'id');
     const sortDirByDepth = lodash.orderBy(dirs, 'depth', 'asc');
     const rootDirs: string[] = [];
 
@@ -522,8 +527,8 @@ class AnalysisJS {
       tree: rootDirs.map((id) => {
         return loopTreeNode(id);
       }),
-      fileMapByPath,
-      dirMapByPath,
+      fileMap: fileMapById,
+      dirMap: dirMapById,
     };
   }
 
@@ -640,7 +645,7 @@ class AnalysisJS {
   }
 
   /**
-   * @function 获取项目内所有文件夹
+   * @function 从DB获取项目内所有文件夹
    */
   public async getAllDir() {
     const res = await this.db.query('dir', ['*']).orderBy('depth', 'asc');
@@ -648,17 +653,32 @@ class AnalysisJS {
   }
 
   /**
+   * @function 从DB获取项目内所有文件
+   */
+  public async getAllFile() {
+    const res = await this.db.query('file', ['*']);
+    return res;
+  }
+
+  /**
    * @function 批量获取文件的属性
    * @description 传入fileIds则按需获取，否则就全量获取
    */
-  public async getFileAttrs(fileIds: number[]) {
-    const dbRes = await this.db.table('file_attr').whereIn('file_id', fileIds);
+  public async getFileAttrs(fileIds?: number[]) {
+    let dataSource: Array<DatabaseTable['file_attr']> = [];
+
+    if (fileIds) {
+      dataSource = await this.db.table('file_attr').whereIn('file_id', fileIds);
+    } else {
+      dataSource = await this.db.table('file_attr');
+    }
+
     // 以文件为维度，归组所有的属性数据
-    const groupByFileId = lodash.groupBy(dbRes, 'file_id');
-    const result: Record<string, FileAttr> = Object.create(dbRes);
+    const groupByFileId = lodash.groupBy(dataSource, 'file_id');
+    const result: Record<string, FileAttr> = {};
 
     // 遍历处理属性数据，改成对象的形式
-    Object.entries(groupByFileId).forEach(([key, attrs]) => {
+    Object.entries(groupByFileId).forEach(([fileId, attrs]) => {
       const res: FileAttr = {
         type: 'module',
         name: '',
@@ -677,10 +697,32 @@ class AnalysisJS {
         }
       });
 
-      result[key] = res;
+      result[fileId] = res;
     });
 
     return result;
+  }
+
+  /**
+   * @function 获取项目文件
+   * @description 传入fileIds则按需获取，否则就全量获取
+   */
+  public async getProjectFiles() {
+    const [files, fileAttrs] = await Promise.all([
+      this.getAllFile(),
+      this.getFileAttrs(),
+    ]);
+
+    const fileWithAttr = files.map((file) => {
+      const attr = fileAttrs[String(file.id)] || null;
+
+      return {
+        ...file,
+        attr,
+      };
+    });
+
+    return lodash.keyBy(fileWithAttr, 'id');
   }
 
   /**

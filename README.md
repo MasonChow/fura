@@ -21,6 +21,10 @@
 
 ## 其他
 
+装包
+
+`pnpm i xxx -r --filter @fura/xxx`
+
 ### 参考
 
 - 在ts中寻找出未使用的导出模块 [github](https://github.com/pzavolinsky/ts-unused-exports)

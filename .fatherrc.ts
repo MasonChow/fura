@@ -4,8 +4,5 @@ export default defineConfig({
   esm: {
     transformer: 'swc',
   },
-  cjs: {
-    transformer: 'swc',
-  },
   platform: 'node',
 });

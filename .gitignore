@@ -1,15 +1,10 @@
 /node_modules
-/packages/*/node_modules
 /dist
 .DS_Store
 /dev
-/packages/*/dist
 /coverage
 /debug
 /.fura
-.next/
-# vercel
-.vercel
 
 # typescript
 *.tsbuildinfo

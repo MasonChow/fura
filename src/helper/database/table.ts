@@ -48,6 +48,7 @@ export interface Table {
     type: 'function' | 'module' | 'page';
     name: string;
     description: string;
+    extra: string;
   };
 }
 
@@ -107,6 +108,7 @@ export const createTables = [
     file_id INTEGER NOT NULL,
     type TEXT NOT NULL,
     name TEXT DEFAULT '',
-    description TEXT DEFAULT ''
+    description TEXT DEFAULT '',
+    extra TEXT DEFAULT ''
   );`,
 ];

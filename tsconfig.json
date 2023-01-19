@@ -13,7 +13,9 @@
     "isolatedModules": true,
     "incremental": true,
     "module": "esnext",
-    "target": "ESNext"
+    "target": "ESNext",
+    "moduleResolution": "node",
+    "declarationDir": "./dist"
   },
   "exclude": [
     "node_modules",
