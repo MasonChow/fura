@@ -8,6 +8,23 @@
   "plugins": [
     "@typescript-eslint"
   ],
+  "settings": {
+    "import/resolver": {
+      "node": {
+        "extensions": [
+          ".js",
+          ".jsx",
+          ".ts",
+          ".tsx"
+        ]
+      }
+    }
+  },
+  "parserOptions": {
+    "project": [
+      "tsconfig.json"
+    ]
+  },
   "rules": {
     // 禁止使用 var
     "no-var": "error",

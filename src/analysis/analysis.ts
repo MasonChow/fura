@@ -393,7 +393,7 @@ class AnalysisJS {
     const attrs: Array<Partial<DatabaseTable['file_attr']>> = [];
 
     function appendAttrs(
-      params: Pick<typeof attrs[0], 'type' | 'name' | 'description'>,
+      params: Pick<(typeof attrs)[0], 'type' | 'name' | 'description'>,
     ) {
       attrs.push({ ...params, file_id: fileId });
     }
