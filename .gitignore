@@ -5,6 +5,7 @@
 /coverage
 /debug
 /.fura
+/build
 
 # typescript
 *.tsbuildinfo

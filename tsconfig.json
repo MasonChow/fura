@@ -8,18 +8,20 @@
     "skipLibCheck": true,
     "allowJs": true,
     "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "incremental": true,
     "module": "esnext",
     "target": "ESNext",
     "moduleResolution": "node",
-    "declarationDir": "./dist"
+    "declarationDir": "./dist",
+    "baseUrl": "./src"
   },
+  "include": [
+    "src"
+  ],
   "exclude": [
     "node_modules",
-    "**/dist",
-    "**/test"
+    "**/test",
   ]
 }
