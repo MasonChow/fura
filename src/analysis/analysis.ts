@@ -559,7 +559,7 @@ class AnalysisJS {
     // 分析入口的文件 使用绝对路径 一般就是{project}/src/index.ts
     const rootFilePath = path.join(rootDirPath, params.rootFilePath);
     // 过滤掉不需要分析的文件(目标文件策略: 文件路径以分析入口目录开头且js/ts类型的文件)
-    const filterFiles = dirFiles.filter((dirFile) => {
+    const filterFiles: typeof dirFiles = dirFiles.filter((dirFile) => {
       return (
         dirFile.file_path.startsWith(rootDirPath) &&
         ['js', 'ts'].includes(dirFile.file_type)

@@ -8,7 +8,6 @@
     "url": "git+https://github.com/MasonChow/fura.git"
   },
   "scripts": {
-    "dev": "father dev",
     "build": "swc ./src -d ./dist && tsc --emitDeclarationOnly --outDir dist"
   },
   "keywords": [],
