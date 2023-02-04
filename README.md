@@ -21,10 +21,6 @@
 
 ## 其他
 
-装包
-
-`pnpm i xxx -r --filter @fura/xxx`
-
 ### 参考
 
 - 在ts中寻找出未使用的导出模块 [github](https://github.com/pzavolinsky/ts-unused-exports)
@@ -33,3 +29,4 @@
 - 检查代码中未使用模块，`eslint/no-unused-vars`
 - 自动修复代码中异常代码块，`eslint --fix`
 - umi检查未使用代码导出配置 [文档](https://umijs.org/docs/api/config#deadcode)
+- Madge 是一个开发人员工具，用于生成模块依赖关系的可视化图表、查找循环依赖关系并为您提供其他有用的信息。[github](https://github.com/pahen/madge)
