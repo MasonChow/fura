@@ -22,6 +22,9 @@
   "files": [
     "dist"
   ],
+  "bin": {
+    "fura": "dist/bin/index.js"
+  },
   "publishConfig": {
     "access": "public"
   },
@@ -39,7 +42,7 @@
     "@types/better-sqlite3": "^7.6.2",
     "@types/jest": "^29.2.3",
     "@types/lodash": "^4.14.189",
-    "@types/node": "^18.11.10",
+    "@types/node": "^18.11.18",
     "@typescript-eslint/eslint-plugin": "^5.39.0",
     "@typescript-eslint/parser": "^5.39.0",
     "eslint": "^8.24.0",
@@ -55,6 +58,8 @@
   },
   "dependencies": {
     "better-sqlite3": "^8.0.1",
+    "cac": "^6.7.14",
+    "echarts": "^5.4.1",
     "knex": "^2.3.0",
     "lodash": "^4.17.21"
   },
