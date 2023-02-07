@@ -10,7 +10,7 @@ const cli = cac('fura');
 cli
   .command('run <dir>', '分析目录')
   .option('-c, <configPath>', '指定配置文件地址')
-  .action(async (target, { c }: { c: string }) => {
+  .action(async (target: string, { c }: { c: string }) => {
     const { run } = await import('../cli/run');
     await run(target, c);
     process.exit(0);

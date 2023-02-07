@@ -536,12 +536,7 @@ class AnalysisJS {
    * @function 获取没被应用的依赖
    * @description 暂时支持ts/js文件引用分析已经npm包中dependencies无被引用分析
    */
-  public async getUnusedDeps(params: {
-    /** 分析文件夹相对与分析目标的路径路径，例如./src */
-    entryDirPath: string;
-    /** 分析文件夹的入口文件，例如./index.ts */
-    rootFilePath: string;
-  }) {
+  public async getUnusedDeps(rootFilePath: string) {
     const [
       // 文件依赖关系
       fileRefs,
@@ -554,16 +549,9 @@ class AnalysisJS {
       this.getDirFiles(),
       this.getNpmPkgs(),
     ]);
-    // 分析入口的目录，使用绝对路径 一般就是{project}/src
-    const rootDirPath = path.join(this.targetDir, params.entryDirPath);
-    // 分析入口的文件 使用绝对路径 一般就是{project}/src/index.ts
-    const rootFilePath = path.join(rootDirPath, params.rootFilePath);
     // 过滤掉不需要分析的文件(目标文件策略: 文件路径以分析入口目录开头且js/ts类型的文件)
     const filterFiles: typeof dirFiles = dirFiles.filter((dirFile) => {
-      return (
-        dirFile.file_path.startsWith(rootDirPath) &&
-        ['js', 'ts'].includes(dirFile.file_type)
-      );
+      return ['js', 'ts'].includes(dirFile.file_type);
     });
     // 以文件维度集合引用的内容
     const filesMap = lodash.keyBy(filterFiles, 'file_id');

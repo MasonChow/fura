@@ -15,9 +15,7 @@
       "args": [
         "${workspaceFolder}/src/bin/index.ts",
         "run",
-        "${workspaceFolder}",
-        "-c",
-        "${workspaceFolder}/debug/config.json"
+        "${workspaceFolder}"
       ]
     }
   ]

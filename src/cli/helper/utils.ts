@@ -3,6 +3,8 @@
  */
 
 import { isAbsolute, join } from 'path';
+import fs from 'fs';
+import { Config } from './type';
 
 /**
  * @function 获取运行目录
@@ -15,4 +17,23 @@ export function getCwd() {
     return isAbsolute(appRoot) ? appRoot : join(cwd, appRoot);
   }
   return cwd;
+}
+
+/**
+ * @function 获取运行配置文件地址
+ * @description 默认会拿运行目录下的.furarc
+ */
+export function getConfigPath(path?: string) {
+  if (path) {
+    return path;
+  }
+
+  return join(getCwd(), '.furarc');
+}
+
+/**
+ * @function 获取运行配置文件
+ */
+export function getConfig(path?: string): Config {
+  return JSON.parse(fs.readFileSync(getConfigPath(path)).toString());
 }

@@ -9,6 +9,8 @@ export interface Config {
     alias?: Record<string, string>;
     // 忽略查询的目录
     exclude?: string[];
+    // 指定查询的目录
+    include?: string[];
   };
 }
 

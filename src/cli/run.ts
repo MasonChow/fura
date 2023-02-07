@@ -1,27 +1,10 @@
-import fs from 'fs';
-import core, { Config as CoreConfig } from '../core';
-import { GetObjectType } from '../typings/common';
+import core from '../core';
+import * as utils from './helper/utils';
 
-type CoreConfigOptions = GetObjectType<CoreConfig, 'options'>;
+export async function run(target: string, configPath?: string) {
+  const config = utils.getConfig(configPath);
 
-interface Config {
-  alias: CoreConfigOptions['alias'];
-  exclude: CoreConfigOptions['exclude'];
-  /** 检测未使用的文件和导出, 后续api实现参考 https://umijs.org/docs/api/config#deadcode */
-  deadCode: {
-    /** 入口文件夹，默认src */
-    entry: string;
-    /** 入口文件，默认index */
-    entryFile: string;
-  };
-}
-
-export async function run(target: string, configPath: string) {
-  const actionConfig: Config = JSON.parse(
-    fs.readFileSync(configPath).toString(),
-  );
-
-  const { alias, exclude, deadCode } = actionConfig;
+  const { alias, exclude, deadCode } = config;
 
   const instance = await core({
     cwd: target,
@@ -31,19 +14,14 @@ export async function run(target: string, configPath: string) {
     },
   });
 
-  const result: any = {
-    ...(await instance.getProjectFiles()),
-  };
+  // const result = {
+  //   ...(await instance.getProjectFiles()),
+  // };
 
   if (deadCode !== undefined) {
-    const { entry, entryFile } = deadCode;
+    const unusedDeps = await instance.getUnusedDeps(deadCode.entry[0]);
 
-    const unusedDeps = await instance.getUnusedDeps({
-      entryDirPath: entry,
-      rootFilePath: entryFile,
-    });
-
-    result.unusedDeps = unusedDeps;
+    console.log(unusedDeps);
   }
 }
 
