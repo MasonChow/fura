@@ -13,9 +13,9 @@
         "ts-node/register"
       ],
       "args": [
-        "${workspaceFolder}/src/cli/index.ts",
+        "${workspaceFolder}/src/bin/index.ts",
         "run",
-        "/Users/zhoushunming/Documents/sc/shopline-post-center",
+        "${workspaceFolder}",
         "-c",
         "${workspaceFolder}/debug/config.json"
       ]
