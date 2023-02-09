@@ -4,7 +4,10 @@
 
 import { isAbsolute, join } from 'path';
 import fs from 'fs';
+import rc from 'rc';
 import { Config } from './type';
+
+const rcConfig = rc('fura');
 
 /**
  * @function 获取运行目录
@@ -35,5 +38,15 @@ export function getConfigPath(path?: string) {
  * @function 获取运行配置文件
  */
 export function getConfig(path?: string): Config {
-  return JSON.parse(fs.readFileSync(getConfigPath(path)).toString());
+  if (path) {
+    return JSON.parse(fs.readFileSync(getConfigPath(path)).toString());
+  }
+
+  const { _, configs, config, ...realConfig } = rcConfig;
+
+  if (realConfig) {
+    return realConfig as unknown as Config;
+  }
+
+  throw new Error('找不到对应配置文件');
 }

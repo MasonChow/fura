@@ -536,7 +536,13 @@ class AnalysisJS {
    * @function 获取没被应用的依赖
    * @description 暂时支持ts/js文件引用分析已经npm包中dependencies无被引用分析
    */
-  public async getUnusedDeps(rootFilePath: string) {
+  public async getUnusedDeps(
+    rootFilePath: string,
+    options?: {
+      include: string[];
+    },
+  ) {
+    const entryFileAbsolutePath = path.join(this.targetDir, rootFilePath);
     const [
       // 文件依赖关系
       fileRefs,
@@ -549,8 +555,22 @@ class AnalysisJS {
       this.getDirFiles(),
       this.getNpmPkgs(),
     ]);
+    // 分析入口的目录，使用绝对路径 一般就是{project}/src
+    const includeDirPaths = options?.include.map((e) => {
+      return path.join(this.targetDir, e);
+    });
     // 过滤掉不需要分析的文件(目标文件策略: 文件路径以分析入口目录开头且js/ts类型的文件)
     const filterFiles: typeof dirFiles = dirFiles.filter((dirFile) => {
+      // 如果指定了include目录，则只识别include里面的
+      if (
+        includeDirPaths &&
+        !includeDirPaths.every((includeDirPath) =>
+          dirFile.file_path.startsWith(includeDirPath),
+        )
+      ) {
+        return false;
+      }
+
       return ['js', 'ts'].includes(dirFile.file_type);
     });
     // 以文件维度集合引用的内容
@@ -567,10 +587,9 @@ class AnalysisJS {
       // 循环处理一次文件，添加未被引用的文件
       [...usedFiles].forEach((fileId) => {
         // 如果是入口文件则不处理
-        if (filesMap[fileId]?.file_path === rootFilePath) {
+        if (filesMap[fileId]?.file_path === entryFileAbsolutePath) {
           return;
         }
-
         // 不存在被引用则表明自身已经是没用了
         if (!refsFileMap[fileId]) {
           usedFiles.delete(fileId);

@@ -10,5 +10,7 @@ export interface Config {
   deadCode: {
     /** 入口文件夹，默认src */
     entry: string[];
+    /** 指定包含的目录 */
+    include: string[];
   };
 }

@@ -5,6 +5,9 @@
   "deadCode": {
     "entry": [
       "./src/index.ts"
+    ],
+    "include": [
+      "./src"
     ]
   }
 }

@@ -19,8 +19,8 @@ export async function run(target: string, configPath?: string) {
   // };
 
   if (deadCode !== undefined) {
-    const unusedDeps = await instance.getUnusedDeps(deadCode.entry[0]);
-
+    const { entry, include } = deadCode;
+    const unusedDeps = await instance.getUnusedDeps(entry[0], { include });
     console.log(unusedDeps);
   }
 }
