@@ -1,6 +1,7 @@
 import SQLITE from 'better-sqlite3';
 import knex, { Knex } from 'knex';
 import fs from 'fs';
+import logger from '../logger';
 
 import { createTables, Table } from './table';
 
@@ -14,24 +15,24 @@ export class Database {
   private knex: Knex;
 
   constructor(filePath = ':memory', forceCreate = true) {
-    console.log('初始化数据库链接，数据库文件缓存地址:', filePath);
+    logger.info('初始化数据库链接，数据库文件缓存地址:', filePath);
     if (forceCreate && filePath !== ':memory') {
       try {
         fs.unlinkSync(filePath);
       } catch (error) {
-        console.log(`${filePath} 文件不存在，无需清空`);
+        logger.info(`${filePath} 文件不存在，无需清空`);
       }
     }
     // 实例化数据库，不存在即创建
-    const db = new SQLITE(filePath, { verbose: console.log });
+    const db = new SQLITE(filePath, { verbose: logger.info });
     // 开启WAL模式优化读写性能 https://github.com/WiseLibs/better-sqlite3/blob/master/docs/performance.md
     // db.pragma('journal_mode = WAL');
-    console.log('检查并创建数据库表');
+    logger.info('检查并创建数据库表');
     // 调用创建表语句创建表
     createTables.forEach((sql) => {
       db.exec(sql);
     });
-    console.time('链接数据库');
+    logger.info('检查并创建数据库');
     this.knex = knex({
       client: 'better-sqlite3',
       connection: {
@@ -39,7 +40,7 @@ export class Database {
       },
       useNullAsDefault: true,
     });
-    console.timeEnd('链接数据库');
+    logger.info('链接数据库完成');
   }
 
   /**

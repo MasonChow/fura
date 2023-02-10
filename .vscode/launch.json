@@ -4,7 +4,25 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch Program",
+      "name": "fura unused",
+      "envFile": "${workspaceFolder}/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "runtimeArgs": [
+        "-r",
+        "ts-node/register",
+      ],
+      "args": [
+        "${workspaceFolder}/src/bin/index.ts",
+        "invalid-deps",
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "fura help",
+      "envFile": "${workspaceFolder}/.env",
       "skipFiles": [
         "<node_internals>/**"
       ],
@@ -14,8 +32,8 @@
       ],
       "args": [
         "${workspaceFolder}/src/bin/index.ts",
-        "run",
-        "${workspaceFolder}"
+        "unused",
+        "-h",
       ]
     }
   ]

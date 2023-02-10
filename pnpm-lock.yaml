@@ -9,6 +9,7 @@ specifiers:
   '@swc/jest': ^0.2.23
   '@types/babel__traverse': ^7.18.3
   '@types/better-sqlite3': ^7.6.2
+  '@types/debug': ^4.1.7
   '@types/jest': ^29.2.3
   '@types/lodash': ^4.14.189
   '@types/node': ^18.11.18
@@ -18,6 +19,7 @@ specifiers:
   better-sqlite3: ^8.0.1
   cac: ^6.7.14
   canvas: ^2.11.0
+  debug: ^4.3.4
   echarts: ^5.4.1
   eslint: ^8.24.0
   eslint-config-airbnb-base: ^15.0.0
@@ -38,6 +40,7 @@ dependencies:
   better-sqlite3: 8.0.1
   cac: 6.7.14
   canvas: 2.11.0
+  debug: 4.3.4
   echarts: 5.4.1
   is-git-clean: 1.1.0
   knex: 2.4.1_better-sqlite3@8.0.1
@@ -53,6 +56,7 @@ devDependencies:
   '@swc/jest': 0.2.24_@swc+core@1.3.27
   '@types/babel__traverse': 7.18.3
   '@types/better-sqlite3': 7.6.3
+  '@types/debug': 4.1.7
   '@types/jest': 29.2.6
   '@types/lodash': 4.14.191
   '@types/node': 18.11.18
@@ -1026,6 +1030,12 @@ packages:
       '@types/node': 18.11.18
     dev: true
 
+  /@types/debug/4.1.7:
+    resolution: {integrity: sha512-9AonUzyTjXXhEOa0DnqpzZi6VHlqKMswga9EXjpXnnqxwLtdvPPtlO8evrI5D9S6asFRCQ6v+wpiUKbw+vKqyg==}
+    dependencies:
+      '@types/ms': 0.7.31
+    dev: true
+
   /@types/graceful-fs/4.1.6:
     resolution: {integrity: sha512-Sig0SNORX9fdW+bQuTEovKj3uHcUL6LQKbCrrqb1X7J6/ReAbhCXRAhc+SMejhLELFj2QcyuxmUooZ4bt5ReSw==}
     dependencies:
@@ -1075,6 +1085,10 @@ packages:
 
   /@types/minimist/1.2.2:
     resolution: {integrity: sha512-jhuKLIRrhvCPLqwPcx6INqmKeiA5EWrsCOPhrlFSrbrmU4ZMPjj5Ul/oLCMDO98XRUIwVm78xICz4EPCektzeQ==}
+    dev: true
+
+  /@types/ms/0.7.31:
+    resolution: {integrity: sha512-iiUgKzV9AuaEkZqkOLDIvlQiL6ltuZd9tGcW3gwpnX8JbuiuhFlEGmmFXEXkN50Cvq7Os88IY2v0dkDqXYWVgA==}
     dev: true
 
   /@types/node/18.11.18:

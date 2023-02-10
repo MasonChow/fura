@@ -1,7 +1,7 @@
 // ast构造器
 import * as parser from '@babel/parser';
-
 import { fs } from './fileReader';
+import logger from './logger';
 
 export interface TranslatorSource {
   // 内容
@@ -35,7 +35,7 @@ export function parseAsync(source: TranslatorSource) {
 
     throw new Error('需要传入content或者filePath');
   } catch (error: any) {
-    console.log(`解析文件失败 ${JSON.stringify(source)}`, error.message);
+    logger.error(`解析文件失败 ${JSON.stringify(source)}`, error.message);
     throw new Error('解析文件失败');
   }
 }

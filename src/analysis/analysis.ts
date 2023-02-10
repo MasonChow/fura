@@ -6,9 +6,10 @@
 import lodash from 'lodash';
 // import cloneDeep from 'lodash/cloneDeep';
 import { Translator, TranslatorType } from '../parser';
-import { path } from '../helper/fileReader';
+import { fs, path } from '../helper/fileReader';
 import diskCache from '../helper/diskCache';
 import * as utils from '../helper/utils';
+import logger from '../helper/logger';
 import { DatabaseTable, Database } from '../helper/database';
 
 type Options = {
@@ -53,9 +54,8 @@ class AnalysisJS {
 
   // 实例化
   constructor(targetDir: string, options?: Options) {
-    console.info('开始实例化');
-    console.info('目标目录:', targetDir);
-    console.time('实例化完成');
+    logger.info('开始实例化');
+    logger.info('目标目录:', targetDir);
     // 提前处理一波alias配置
     if (options?.alias) {
       // eslint-disable-next-line no-param-reassign
@@ -74,7 +74,7 @@ class AnalysisJS {
     // 初始化DB
     this.initDB(options?.project);
 
-    console.timeEnd('实例化完成');
+    logger.info('实例化完成');
   }
 
   private initDB(project = this.options?.project || 'data') {
@@ -146,23 +146,21 @@ class AnalysisJS {
 
     loopNode(dir.dirTree);
 
-    console.time('写入基础数据');
+    logger.info('写入基础数据');
     await Promise.all([
       this.DB.inserts('dir', tableDirs),
       this.DB.inserts('file', tableFiles),
       this.DB.inserts('npm_pkg', tableNpmPkgs),
     ]);
-    console.timeEnd('写入基础数据');
-
-    console.time('查询基础数据');
+    logger.info('写入基础数据完成');
+    logger.info('查询基础数据');
     const [dirs, files, npmPkgs] = await Promise.all([
       this.DB.query('dir', ['id', 'path', 'parent_path']),
       this.DB.query('file', ['id', 'path', 'parent_path']),
       this.DB.query('npm_pkg', ['id', 'name']),
     ]);
-    console.timeEnd('查询基础数据');
-
-    console.time('插入文件夹与文件关系数据');
+    logger.info('查询基础数据完成');
+    logger.info('插入文件夹与文件关系数据');
     const dirMap = dirs.reduce((pre, cur) => {
       // eslint-disable-next-line no-param-reassign
       pre[cur.path] = { id: cur.id, parentPath: cur.parent_path };
@@ -203,8 +201,7 @@ class AnalysisJS {
         return this.DB.inserts('dir_file_relation', relations);
       }),
     );
-    console.timeEnd('插入文件夹与文件关系数据');
-
+    logger.info('插入文件夹与文件关系数据完成');
     return this.dataCache;
   }
 
@@ -277,7 +274,7 @@ class AnalysisJS {
 
   // 分析
   public async analysis() {
-    console.time('分析内容完成');
+    logger.info('分析内容');
     // 目标文件map
     const { file } = await this.initBaseDataIntoDB();
 
@@ -292,7 +289,7 @@ class AnalysisJS {
         return null;
       }),
     );
-    console.timeEnd('分析内容完成');
+    logger.info('分析内容完成');
   }
 
   /**
@@ -543,6 +540,10 @@ class AnalysisJS {
     },
   ) {
     const entryFileAbsolutePath = path.join(this.targetDir, rootFilePath);
+
+    // 检查文件是否存在
+    fs.statSync(entryFileAbsolutePath);
+
     const [
       // 文件依赖关系
       fileRefs,
