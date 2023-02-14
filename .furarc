@@ -4,7 +4,8 @@
   },
   "deadCode": {
     "entry": [
-      "./src/index.ts"
+      "./src/index.ts",
+      "./src/bin/cli.ts"
     ],
     "include": [
       "./src"

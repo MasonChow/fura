@@ -5,6 +5,7 @@
 
 import { cac } from 'cac';
 import Table from 'easy-table';
+import lodash from 'lodash';
 // import ora from 'ora';
 import { getConfig, getPackageJSON } from './helper/utils';
 import core from '../core';
@@ -44,11 +45,27 @@ cli
       // spinner.text = '分析依赖关系';
 
       const { entry, include } = deadCode;
-      const { files, npmPkgs } = await instance.getUnusedDeps(entry[0], {
-        include,
-      });
 
-      // spinner.succeed('分析完成');
+      // 批量分析依赖结果
+      const results = await Promise.all(
+        entry.map((e) => {
+          return instance.getUnusedDeps(e, {
+            include,
+          });
+        }),
+      );
+
+      // 取多次的交集即可判断出真正没被使用的文件
+      const { files, npmPkgs } = results.reduce((prev, cur, idx) => {
+        if (idx === 0) {
+          return cur;
+        }
+
+        return {
+          files: lodash.intersectionBy(prev.files, cur.files, 'id'),
+          npmPkgs: lodash.intersectionBy(prev.npmPkgs, cur.npmPkgs, 'id'),
+        };
+      });
 
       if (t === 'log') {
         if (files.length) {
@@ -77,6 +94,8 @@ cli
           outputContent = fileTable.toString();
           console.info('----- 检测到存在未使用文件 ------');
           console.info(outputContent);
+        } else {
+          console.info('🎉🎉🎉未检测到未被引用文件');
         }
 
         if (npmPkgs.length) {
@@ -100,6 +119,8 @@ cli
             '----- 检测到存在未使用的npm包(仅检测dependencies) ------',
           );
           console.info(outputContent);
+        } else {
+          console.info('🎉🎉🎉未检测到未被引用npm包');
         }
       }
       process.exit(0);
