@@ -3,7 +3,8 @@
   "jsc": { // 编译规则 
     "target": "es2022", // 输出js的规范 
     "parser": {
-      "syntax": "typescript"
+      "syntax": "typescript",
+      "dynamicImport": true
     }
   }
 }

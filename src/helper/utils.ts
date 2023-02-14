@@ -20,7 +20,7 @@ export function isJsTypeFile(fileName: string): boolean {
     return false;
   }
 
-  const testJsFileReg = new RegExp(`.(${jsFileSuffix.join('|')})$`);
+  const testJsFileReg = new RegExp(`\\.(${jsFileSuffix.join('|')})$`);
 
   return testJsFileReg.test(testFileName);
 }

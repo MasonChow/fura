@@ -4,18 +4,15 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "fura unused",
+      "name": "unused",
       "envFile": "${workspaceFolder}/.env",
       "skipFiles": [
         "<node_internals>/**"
       ],
-      "runtimeArgs": [
-        "-r",
-        "ts-node/register",
-      ],
+      "program": "${workspaceFolder}/node_modules/ts-node/dist/bin.js",
       "args": [
-        "${workspaceFolder}/src/bin/index.ts",
-        "invalid-deps",
+        "${workspaceFolder}/src/bin/cli.ts",
+        "unused",
       ]
     },
     {
@@ -26,14 +23,25 @@
       "skipFiles": [
         "<node_internals>/**"
       ],
-      "runtimeArgs": [
-        "-r",
-        "ts-node/register"
-      ],
+      "program": "${workspaceFolder}/node_modules/ts-node/dist/bin.js",
       "args": [
-        "${workspaceFolder}/src/bin/index.ts",
+        "${workspaceFolder}/src/bin/cli.ts",
         "unused",
         "-h",
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "version",
+      "envFile": "${workspaceFolder}/.env",
+      "program": "${workspaceFolder}/node_modules/ts-node/dist/bin.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "args": [
+        "${workspaceFolder}/src/bin/cli.ts",
+        "-v",
       ]
     }
   ]

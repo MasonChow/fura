@@ -2,10 +2,16 @@
  * @module cli工具类
  */
 
-import { isAbsolute, join } from 'path';
-import fs from 'fs';
+import { isAbsolute, join } from 'node:path';
+import fs from 'node:fs';
 // import rc from 'rc';
 import { Config } from './type';
+
+export function getPackageJSON(): {
+  version: string;
+} {
+  return JSON.parse(fs.readFileSync('../../package.json').toString());
+}
 
 /**
  * @function 获取运行目录
@@ -50,7 +56,7 @@ export function getConfig(path?: string) {
         fs.readFileSync(getConfigPath('.furarc')).toString(),
       );
     } catch (error) {
-      throw new Error('找不到对应配置文件', { cause: error });
+      throw new Error('找不到对应配置文件');
     }
   }
 

@@ -152,8 +152,8 @@ class AnalysisJS {
       this.DB.inserts('file', tableFiles),
       this.DB.inserts('npm_pkg', tableNpmPkgs),
     ]);
-    logger.info('写入基础数据完成');
-    logger.info('查询基础数据');
+    logger.info('写入基础数据');
+    logger.info('查询基础数据完成');
     const [dirs, files, npmPkgs] = await Promise.all([
       this.DB.query('dir', ['id', 'path', 'parent_path']),
       this.DB.query('file', ['id', 'path', 'parent_path']),

@@ -34,8 +34,10 @@ export function parseAsync(source: TranslatorSource) {
     }
 
     throw new Error('需要传入content或者filePath');
-  } catch (error: any) {
-    logger.error(`解析文件失败 ${JSON.stringify(source)}`, error.message);
+  } catch (error) {
+    if (error instanceof Error) {
+      logger.error(`解析文件失败 ${JSON.stringify(source)}`, error.message);
+    }
     throw new Error('解析文件失败');
   }
 }
