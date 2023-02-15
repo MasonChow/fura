@@ -8,16 +8,16 @@ import core from '../../core';
 
 import { printConsole } from './output';
 
-export type Options = Pick<Config, 'alias' | 'exclude'> & {
+export type Options = Pick<Config, 'alias' | 'exclude' | 'include'> & {
   outputType?: 'console' | 'html' | 'json' | 'txt';
 };
 
 async function unused(
   target: string,
-  deadCode: Required<Config>['deadCode'],
+  entry: Required<Config>['entry'],
   options: Options,
 ) {
-  const { alias, exclude, outputType = 'console' } = options;
+  const { alias, exclude, include, outputType = 'console' } = options;
   const instance = await core({
     cwd: target,
     options: {
@@ -26,7 +26,6 @@ async function unused(
     },
   });
 
-  const { entry, include } = deadCode;
   // 批量分析依赖结果
   const results = await Promise.all(
     entry.map((e) => {

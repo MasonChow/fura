@@ -26,13 +26,34 @@ cli
       { c, t }: { c?: string; t?: unUsedOptions['outputType'] },
     ) => {
       const config = getConfig(c);
-      const alias = config('alias');
-      const exclude = config('exclude');
-      const deadCode = config('deadCode', true);
-      await unused(target, deadCode, { alias, exclude, outputType: t });
+
+      await unused(target, config('entry', true), {
+        alias: config('alias'),
+        exclude: config('exclude'),
+        include: config('include', true),
+        outputType: t,
+      });
       process.exit(0);
     },
   );
+
+cli
+  .command(
+    'comment-doc [path]',
+    '指定入口文件分析项目内无效依赖项目, 默认拿当前执行目录',
+  )
+  .option('-c,-config <configPath>', '指定配置文件地址')
+  // .option('-o,-output <outputPath>', '输出文件的地址')
+  // .option(
+  //   '-t,-type [type]',
+  //   '指定输出的报告类型 log,html,excel,canvas,json(Default is json)',
+  // )
+  .action(async (target: string) => {
+    // const config = getConfig(c);
+    console.log(target);
+
+    process.exit(0);
+  });
 
 cli.help();
 cli.version(getPackageJSON().version);

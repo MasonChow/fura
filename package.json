@@ -23,7 +23,7 @@
     "dist"
   ],
   "bin": {
-    "fura": "dist/bin/cli.js"
+    "fura": "dist/bin/index.js"
   },
   "publishConfig": {
     "access": "public"

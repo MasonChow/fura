@@ -11,7 +11,7 @@
       ],
       "program": "${workspaceFolder}/node_modules/ts-node/dist/bin.js",
       "args": [
-        "${workspaceFolder}/src/bin/cli.ts",
+        "${workspaceFolder}/src/bin/index.ts",
         "unused",
       ]
     },
@@ -25,7 +25,7 @@
       ],
       "program": "${workspaceFolder}/node_modules/ts-node/dist/bin.js",
       "args": [
-        "${workspaceFolder}/src/bin/cli.ts",
+        "${workspaceFolder}/src/bin/index.ts",
         "unused",
         "-h",
       ]
@@ -40,7 +40,7 @@
         "<node_internals>/**"
       ],
       "args": [
-        "${workspaceFolder}/src/bin/cli.ts",
+        "${workspaceFolder}/src/bin/index.ts",
         "-v",
       ]
     }

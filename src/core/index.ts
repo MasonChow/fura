@@ -1,3 +1,7 @@
+/**
+ * @module 主要入口模块，提供对应的操作api
+ */
+
 import Analysis from '../analysis';
 
 export interface Config {
@@ -14,6 +18,9 @@ export interface Config {
   };
 }
 
+/**
+ * @function 提供对应的使用api
+ */
 export async function main(config: Config) {
   const analysis = new Analysis(config.cwd || process.cwd(), config.options);
   await analysis.analysis();
