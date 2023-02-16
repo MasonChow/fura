@@ -8,3 +8,5 @@ export type Config = Partial<Pick<CoreConfigOptions, 'alias' | 'exclude'>> &
     /** 入口文件,需要指定到具体文件，例如src/index.ts */
     entry: string[];
   };
+
+export type CommonOptions = Pick<Config, 'alias' | 'exclude' | 'include'>;

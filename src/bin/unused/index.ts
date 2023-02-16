@@ -3,19 +3,21 @@
  */
 import lodash from 'lodash';
 // import ora from 'ora';
-import { Config } from '../helper/type';
+import { Config, CommonOptions } from '../helper/type';
 import core from '../../core';
 
 import { printConsole } from './output';
 
-export type Options = Pick<Config, 'alias' | 'exclude' | 'include'> & {
+export type Options = CommonOptions & {
   outputType?: 'console' | 'html' | 'json' | 'txt';
 };
 
 async function unused(
   target: string,
   entry: Required<Config>['entry'],
-  options: Options,
+  options: CommonOptions & {
+    outputType?: 'console' | 'html' | 'json' | 'txt';
+  },
 ) {
   const { alias, exclude, include, outputType = 'console' } = options;
   const instance = await core({

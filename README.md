@@ -35,6 +35,8 @@
 
 ## 其他
 
+- 内容结果生成可以使用[kroki](https://kroki.io/)
+
 ### 参考
 
 - 在ts中寻找出未使用的导出模块 [github](https://github.com/pzavolinsky/ts-unused-exports)

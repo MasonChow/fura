@@ -36,7 +36,18 @@ export async function main(config: Config) {
     async getUnusedDeps(...args: Parameters<typeof analysis.getUnusedDeps>) {
       return analysis.getUnusedDeps(...args);
     },
+    async getCommentRelation(
+      ...args: Parameters<typeof analysis.getCommentRelation>
+    ) {
+      return analysis.getCommentRelation(...args);
+    },
   };
 }
+
+export type CoreActionReturnType = {
+  [key in keyof Awaited<ReturnType<typeof main>>]: Awaited<
+    ReturnType<Awaited<ReturnType<typeof main>>[key]>
+  >;
+};
 
 export default main;

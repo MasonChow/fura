@@ -1,7 +1,7 @@
 import { WriteFileOptions } from 'fs';
 import { fs, path } from './fileReader';
 
-class DiskCache {
+export class DiskCache {
   public readonly dirPath: string;
 
   constructor(root: string = process.cwd()) {
@@ -20,8 +20,10 @@ class DiskCache {
     return path.join(this.dirPath, filePath);
   }
 
-  writeFileSync(filePath: string, data: string, options?: WriteFileOptions) {
-    fs.writeFileSync(this.createFilePath(filePath), data, options);
+  writeFileSync(fileName: string, data: string, options?: WriteFileOptions) {
+    const filePath = this.createFilePath(fileName);
+    fs.writeFileSync(filePath, data, options);
+    return filePath;
   }
 }
 

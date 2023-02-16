@@ -263,3 +263,10 @@ export function transformAliasPath(
 
   return sourcePath;
 }
+
+export function replaceSpecialSymbolStr(str: string) {
+  return str.replace(
+    /[`~!@#$^\-&*()=|{}':;',\\[\].<>/?~！@#￥……&*（）——|{}【】'；：""'。，、？\s]/g,
+    '',
+  );
+}

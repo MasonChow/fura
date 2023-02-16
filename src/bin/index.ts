@@ -4,10 +4,14 @@
  */
 
 import { cac } from 'cac';
-import { getConfig, getPackageJSON } from './helper/utils';
+import { getConfig, getPackageJSON, getCwd } from './helper/utils';
 import unused, { Options as unUsedOptions } from './unused';
+import commentDoc from './comment-doc';
 
 const cli = cac('fura');
+const defaultCwd = getCwd();
+
+console.info(`当前运行目录:${defaultCwd}`);
 
 cli
   .command(
@@ -27,7 +31,7 @@ cli
     ) => {
       const config = getConfig(c);
 
-      await unused(target, config('entry', true), {
+      await unused(target || defaultCwd, config('entry', true), {
         alias: config('alias'),
         exclude: config('exclude'),
         include: config('include', true),
@@ -48,10 +52,15 @@ cli
   //   '-t,-type [type]',
   //   '指定输出的报告类型 log,html,excel,canvas,json(Default is json)',
   // )
-  .action(async (target: string) => {
+  .action(async (target: string, { c }: { c?: string }) => {
     // const config = getConfig(c);
-    console.log(target);
+    const config = getConfig(c);
 
+    await commentDoc(target || defaultCwd, config('entry', true), {
+      alias: config('alias'),
+      exclude: config('exclude'),
+      include: config('include', true),
+    });
     process.exit(0);
   });
 

@@ -39,6 +39,14 @@ export interface FileAttr {
   functions: Array<{ name: string; description: string }>;
 }
 
+export type FileWithAttr = DatabaseTable['file'] & {
+  attr: FileAttr | null;
+};
+
+export type GetCommentRelationResult = FileWithAttr & {
+  next: Array<GetCommentRelationResult> | null;
+};
+
 class AnalysisJS {
   /** 配置项 */
   private options?: Options;
@@ -552,7 +560,7 @@ class AnalysisJS {
       // 项目npm包
       npmPkgs,
     ] = await Promise.all([
-      this.getFileReference(),
+      this.getAllFileRefs(),
       this.getDirFiles(),
       this.getNpmPkgs(),
     ]);
@@ -649,6 +657,73 @@ class AnalysisJS {
           npmPkg.type === 'dependencies'
         );
       }),
+    };
+  }
+
+  public async getCommentRelation(rootFilePath: string) {
+    logger.info('获取注释关系图');
+    const entryFileAbsolutePath = path.join(this.targetDir, rootFilePath);
+    const lock = new Set<number>();
+
+    // 检查文件是否存在
+    fs.statSync(entryFileAbsolutePath);
+
+    const rootFileId = this.dataCache?.file[entryFileAbsolutePath]?.id || 0;
+
+    const loop = async (fileId: number) => {
+      logger.info('递归执行', fileId);
+      // 基于文件id查询到关系链
+      const [relations, fileWithAttr] = await Promise.all([
+        this.getFileRefs(fileId),
+        this.getFileWithAttr({ id: fileId }),
+      ]);
+
+      logger.info(
+        `查询完成，当期文件${fileWithAttr.path}有${relations.length}个关系`,
+      );
+
+      const result: GetCommentRelationResult = {
+        ...fileWithAttr,
+        next: null,
+      };
+
+      if (relations.length && !lock.has(fileId)) {
+        lock.add(fileId);
+        result.next = [];
+
+        // eslint-disable-next-line no-restricted-syntax
+        for (const r of relations.filter((j) => j.type === 'file')) {
+          // eslint-disable-next-line no-await-in-loop
+          const res = await loop(r.ref_id);
+          result.next.push(res);
+        }
+      }
+
+      return result;
+    };
+
+    const res = await loop(rootFileId);
+    return res;
+  }
+
+  /**
+   * @function 获取文件信息以及相关属性
+   */
+  public async getFileWithAttr(params: Partial<{ path: string; id: number }>) {
+    let fileId = params.id || 0;
+
+    if (!fileId && params.path) {
+      fileId = this.dataCache?.file[params.path]?.id || 0;
+    }
+
+    const [fileRes, attrsRes] = await Promise.all([
+      this.getFilesByIds([fileId]),
+      this.getFileAttrs([fileId]),
+    ]);
+
+    return {
+      ...fileRes[0],
+      attr: attrsRes[fileId] || null,
     };
   }
 
@@ -778,8 +853,19 @@ class AnalysisJS {
   /**
    * @function 获取所有文件依赖关系
    */
-  public async getFileReference() {
+  public async getAllFileRefs() {
     const res = await this.db.query('file_reference', ['*']);
+    return res;
+  }
+
+  /**
+   * @function 获取所有文件依赖关系
+   */
+  public async getFileRefs(fileId: number) {
+    const res = await this.db
+      .table('file_reference')
+      .where('file_id', fileId)
+      .select('*');
     return res;
   }
 
