@@ -1,3 +1,7 @@
+/**
+ * @name 全局通用方法类
+ */
+
 import { fs, path } from './fileReader';
 import * as UtilTypes from '../typings/utils';
 
@@ -6,11 +10,17 @@ export * as UtilTypes from '../typings/utils';
 // js文件后缀类型
 export const jsFileSuffix = ['js', 'jsx', 'ts', 'tsx', 'd.ts'] as const;
 
+export type JSFileSuffixType = (typeof jsFileSuffix)[number];
+
 /**
- * 是否js类型的文件
+ * 判断是否js类型的文件
  *
- * 1. 文件名js/jsx/ts/tsx结尾
- * 2. 非*.d.ts文件
+ * @param fileName - 文件名
+ *
+ * @example
+ * a.js/a.jsx/a.ts/a.tsx -> true
+ * a.d.ts -> false
+ *
  */
 export function isJsTypeFile(fileName: string): boolean {
   // 去掉由于路径的影响
@@ -25,6 +35,17 @@ export function isJsTypeFile(fileName: string): boolean {
   return testJsFileReg.test(testFileName);
 }
 
+/**
+ * 获取文件类型
+ *
+ * @param fileName - 文件名
+ *
+ * @example
+ * a.js/a.jsx -> js
+ * a.ts/a.tsx -> ts
+ * a.d.ts -> ts
+ * a.png -> others
+ */
 export function getFileType(fileName: string): UtilTypes.FileType {
   if (isJsTypeFile(fileName)) {
     if (/.(js|jsx)$/.test(fileName)) {
@@ -41,38 +62,54 @@ export function getFileType(fileName: string): UtilTypes.FileType {
 /**
  * 创建匹配index的文件路径
  *
+ * @param filePath - 文件路径
+ *
+ * @example
  * 1. xxx/App -> xxx/App.(ts|js|tsx|jsx)
  * 2. xxx/App -> xxx/App/index.(ts|js|tsx|jsx)
  */
-export function createDirIndexFilePaths(filePath: string) {
+export function createDirIndexFilePaths<T extends string = string>(
+  filePath: T,
+): Array<`${T}${'/index' | ''}.${JSFileSuffixType}`> {
   return [
     // xxx/App -> xxx/App.(ts|js|tsx|jsx)
-    ...jsFileSuffix.map((suffix) => `${filePath}.${suffix}`),
+    ...jsFileSuffix.map((suffix) => `${filePath}.${suffix}` as const),
     // xxx/App -> xxx/App/index.(ts|js|tsx|jsx)
-    ...jsFileSuffix.map((suffix) => `${filePath}/index.${suffix}`),
+    ...jsFileSuffix.map((suffix) => `${filePath}/index.${suffix}` as const),
   ];
 }
 
 /**
- * 格式化文件的大小
- * B/KB/MB/GB/TB
+ * 格式化显示文件的大小
+ *
+ * @param size - 文件的大小
+ *
+ * @example
+ * 1023 -> 1023B
+ * 1024 -> 1KB
+ * 1024 * 1024 -> 1MB
+ * 1024 * 1024 * 1024 -> 1GB
+ * 1024 * 1024 * 1024 * 1024 -> 1TB
+ * 1024 * 1024 * 1024 * 1024 * 1024 -> 1024TB
  */
-export function formatFileSize(size: number): string {
+export function formatFileSize(
+  size: number,
+): `${number}${'B' | 'KB' | 'MB' | 'GB' | 'TB'}` {
   const base = 1024; // byte
   if (size < base) {
-    return `${size.toFixed(2)}B`;
+    return `${Number(size.toFixed(2))}B`;
   }
 
   if (size < Math.pow(base, 2)) {
-    return `${(size / base).toFixed(2)}KB`;
+    return `${Number(Number(size / base).toFixed(2))}KB`;
   }
   if (size < Math.pow(base, 3)) {
-    return `${(size / Math.pow(base, 2)).toFixed(2)}MB`;
+    return `${Number(Number(size / Math.pow(base, 2)).toFixed(2))}MB`;
   }
   if (size < Math.pow(base, 4)) {
-    return `${(size / Math.pow(base, 3)).toFixed(2)}GB`;
+    return `${Number(Number(size / Math.pow(base, 3)).toFixed(2))}GB`;
   }
-  return `${(size / Math.pow(base, 4)).toFixed(2)}TB`;
+  return `${Number(Number(size / Math.pow(base, 4)).toFixed(2))}TB`;
 }
 
 export function getProjectNPMPackages(rootDir: string) {

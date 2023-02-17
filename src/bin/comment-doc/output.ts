@@ -4,14 +4,14 @@
 
 import diskCache from '../../helper/diskCache';
 import { replaceSpecialSymbolStr } from '../../helper/utils';
-import { getMedia } from '../../helper/mermaid';
+import { conversionToMedia } from '../../helper/mermaid';
 import { CoreActionReturnType } from '../../core';
 
 export async function mermaid(
   data: CoreActionReturnType['getCommentRelation'],
 ) {
   const map = new Map<number, any>();
-  const relations = new Set<string>();
+  const relations = new Set<`${number}-->${number};`>();
 
   function loop(item: typeof data) {
     if (!item || item.type !== 'ts') {
@@ -43,6 +43,6 @@ export async function mermaid(
         .join('\n')}
       ${[...relations].join('\n')}
   `;
-  const res = await getMedia(content, 'svg');
+  const res = await conversionToMedia(content, 'svg');
   return diskCache.writeFileSync('./common.svg', String(res));
 }
