@@ -35,7 +35,10 @@ export async function mermaid(
 
   loop(data);
 
-  const content = flowChats.createFlowcharts(params);
-  const res = await conversionToMedia(content, 'svg');
-  return diskCache.writeFileSync('./common.svg', String(res));
+  const res = await conversionToMedia(
+    flowChats.createFlowcharts(params),
+    'svg',
+  );
+
+  return diskCache.writeFileSync('./comment-relation.svg', String(res));
 }
