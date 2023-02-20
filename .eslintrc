@@ -62,6 +62,7 @@
           "timeEnd"
         ]
       }
-    ]
+    ],
+    "no-unused-vars": 0
   }
 }

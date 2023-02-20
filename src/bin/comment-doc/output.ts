@@ -4,7 +4,7 @@
 
 import diskCache from '../../helper/diskCache';
 import { replaceSpecialSymbolStr } from '../../helper/utils';
-import { conversionToMedia } from '../../helper/mermaid';
+import { conversionToMedia, flowChats } from '../../helper/mermaid';
 import { CoreActionReturnType } from '../../core';
 
 export async function mermaid(

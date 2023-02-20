@@ -32,10 +32,15 @@
 
 - [x] 缓存生成
 - [ ] package.json使用type=module
+- [ ] 完善代码注释
 
 ## 其他
 
 - 内容结果生成可以使用[kroki](https://kroki.io/)
+
+## 开发约定
+
+- 注释规范使用[tsDoc](https://tsdoc.org/pages/intro/using_tsdoc/)
 
 ### 参考
 
