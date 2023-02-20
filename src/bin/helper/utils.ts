@@ -10,7 +10,7 @@ import { Config } from './type';
 export function getPackageJSON(): {
   version: string;
 } {
-  return JSON.parse(fs.readFileSync('../../package.json').toString());
+  return JSON.parse(fs.readFileSync('./package.json').toString());
 }
 
 /**

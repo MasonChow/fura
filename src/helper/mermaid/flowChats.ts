@@ -2,6 +2,7 @@
  * mermaid-flowChats模块
  */
 
+import { replaceSpecialSymbolStr } from '../utils';
 import { GetObjectEntries } from '../../typings/utils';
 
 export const NODE_LINK_MAP = {
@@ -20,11 +21,9 @@ export interface FlowChartsNodeShape {
   type?: 'round-edges' | 'stadium' | 'circle' | 'rhombus';
 }
 
-export type FlowChartNodeLinkType = [
-  string,
-  string,
-  { text: string; type: NodeLinkMapTypes['keys'] },
-];
+export type FlowChartNodeLinkType =
+  | [string, string]
+  | [string, string, { text: string; type: NodeLinkMapTypes['keys'] }];
 
 /** 渲染flowCharts流程图数据类型定义 */
 export interface CreateFlowchartsData {
@@ -75,16 +74,17 @@ export function createFlowChartsNodeShape(params: {
   type?: FlowChartsNodeShape['type'];
 }) {
   const { key, name, type = 'round-edges' } = params;
+  const nodeName = replaceSpecialSymbolStr(name);
 
   switch (type) {
     case 'round-edges':
-      return `${key}[${name}];` as const;
+      return `${key}[${nodeName}];` as const;
     case 'stadium':
-      return `${key}([${name}]);` as const;
+      return `${key}([${nodeName}]);` as const;
     case 'circle':
-      return `${key}((${name}));` as const;
+      return `${key}((${nodeName}));` as const;
     case 'rhombus':
-      return `${key}{${name}};` as const;
+      return `${key}{${nodeName}};` as const;
     default:
       throw new Error('unknown node type');
   }
