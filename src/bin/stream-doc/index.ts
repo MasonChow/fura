@@ -17,7 +17,7 @@ async function commentDoc(
     options,
   });
 
-  const entryFile = './src/helper/database/index.ts';
+  const entryFile = './src/bin/comment-doc/index.ts';
 
   const [upRelation, downRelation] = await Promise.all([
     instance.getFileRelation(entryFile, 'up'),
