@@ -19,13 +19,20 @@ export interface Config {
 }
 
 /**
- * @function 提供对应的使用api
+ * 提供对应的使用api
  */
 export async function main(config: Config) {
   const analysis = new Analysis(config.cwd || process.cwd(), config.options);
   await analysis.analysis();
 
   return {
+    /**
+     * 获取整个目录文件信息
+     *
+     * @returns projectTree 目录书
+     * @returns fileMap 存储的文件信息，key为文件id
+     * @returns dirMap 存储的文件夹信息，key为文件夹id
+     */
     async getProjectFiles() {
       const [{ tree, dirMap }, fileMap] = await Promise.all([
         analysis.getProjectTree(),
@@ -33,14 +40,7 @@ export async function main(config: Config) {
       ]);
       return { projectTree: tree, fileMap, dirMap };
     },
-    async getUnusedDeps(...args: Parameters<typeof analysis.getUnusedDeps>) {
-      return analysis.getUnusedDeps(...args);
-    },
-    async getFileRelation(
-      ...args: Parameters<typeof analysis.getFileRelation>
-    ) {
-      return analysis.getFileRelation(...args);
-    },
+    /** 分析sdk示例 */
     analysis,
   };
 }

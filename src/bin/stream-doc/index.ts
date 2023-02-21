@@ -20,8 +20,8 @@ async function commentDoc(
   const entryFile = './src/bin/comment-doc/index.ts';
 
   const [upRelation, downRelation] = await Promise.all([
-    instance.getFileRelation(entryFile, 'up'),
-    instance.getFileRelation(entryFile, 'down'),
+    instance.analysis.getFileRelation(entryFile, 'up'),
+    instance.analysis.getFileRelation(entryFile, 'down'),
   ]);
 
   const filePath = await mermaid({

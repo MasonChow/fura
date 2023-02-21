@@ -4,9 +4,8 @@
 
 import diskCache from '../../helper/diskCache';
 import { conversionToMedia, flowChats } from '../../helper/mermaid';
-import { CoreActionReturnType } from '../../core';
 
-export async function mermaid(data: CoreActionReturnType['getFileRelation']) {
+export async function mermaid(data: any) {
   const rootFile = data.id;
   const params: flowChats.CreateFlowchartsData = {
     links: [],
@@ -30,12 +29,12 @@ export async function mermaid(data: CoreActionReturnType['getFileRelation']) {
       };
     }
 
-    prev?.forEach((n) => {
+    prev?.forEach((n: any) => {
       params.links.push([String(n.id), String(id)]);
       loop(n);
     });
 
-    next?.forEach((n) => {
+    next?.forEach((n: any) => {
       params.links.push([
         String(id),
         String(n.id),
