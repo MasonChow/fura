@@ -44,7 +44,8 @@ export type FileWithAttr = DatabaseTable['file'] & {
 };
 
 export type GetCommentRelationResult = FileWithAttr & {
-  next: Array<GetCommentRelationResult> | null;
+  next?: Array<GetCommentRelationResult> | null;
+  prev?: Array<GetCommentRelationResult> | null;
 };
 
 class AnalysisJS {
@@ -660,10 +661,19 @@ class AnalysisJS {
     };
   }
 
-  public async getCommentRelation(rootFilePath: string) {
+  /**
+   * @function 获取文件依赖关系
+   *
+   * @params type up-上游 down-下游
+   */
+  public async getFileRelation(
+    rootFilePath: string,
+    type: 'up' | 'down' = 'down',
+  ) {
     logger.info('获取注释关系图');
     const entryFileAbsolutePath = path.join(this.targetDir, rootFilePath);
     const lock = new Set<number>();
+    const isUpType = type === 'up';
 
     // 检查文件是否存在
     fs.statSync(entryFileAbsolutePath);
@@ -674,7 +684,9 @@ class AnalysisJS {
       logger.info('递归执行', fileId);
       // 基于文件id查询到关系链
       const [relations, fileWithAttr] = await Promise.all([
-        this.getFileRefs(fileId),
+        isUpType
+          ? this.getFileUpstream(fileId)
+          : this.getFileDownstream(fileId),
         this.getFileWithAttr({ id: fileId }),
       ]);
 
@@ -685,17 +697,29 @@ class AnalysisJS {
       const result: GetCommentRelationResult = {
         ...fileWithAttr,
         next: null,
+        prev: null,
       };
 
       if (relations.length && !lock.has(fileId)) {
         lock.add(fileId);
-        result.next = [];
+
+        if (isUpType) {
+          result.prev = [];
+        } else {
+          result.next = [];
+        }
 
         // eslint-disable-next-line no-restricted-syntax
         for (const r of relations.filter((j) => j.type === 'file')) {
-          // eslint-disable-next-line no-await-in-loop
-          const res = await loop(r.ref_id);
-          result.next.push(res);
+          if (isUpType) {
+            // eslint-disable-next-line no-await-in-loop
+            const res = await loop(r.file_id);
+            result.prev!.push(res);
+          } else {
+            // eslint-disable-next-line no-await-in-loop
+            const res = await loop(r.ref_id);
+            result.next!.push(res);
+          }
         }
       }
 
@@ -859,12 +883,23 @@ class AnalysisJS {
   }
 
   /**
-   * @function 获取所有文件依赖关系
+   * @function 获取所有文件下游依赖关系
    */
-  public async getFileRefs(fileId: number) {
+  public async getFileDownstream(fileId: number) {
     const res = await this.db
       .table('file_reference')
       .where('file_id', fileId)
+      .select('*');
+    return res;
+  }
+
+  /**
+   * @function 获取所有文件上游依赖关系
+   */
+  public async getFileUpstream(fileId: number) {
+    const res = await this.db
+      .table('file_reference')
+      .where('ref_id', fileId)
       .select('*');
     return res;
   }

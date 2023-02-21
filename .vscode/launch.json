@@ -32,6 +32,20 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "stream-doc",
+      "envFile": "${workspaceFolder}/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "program": "${workspaceFolder}/node_modules/ts-node/dist/bin.js",
+      "args": [
+        "${workspaceFolder}/src/bin/index.ts",
+        "stream-doc",
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "fura help",
       "envFile": "${workspaceFolder}/.env",
       "skipFiles": [

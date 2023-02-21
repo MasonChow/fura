@@ -7,6 +7,7 @@ import { conversionToMedia, flowChats } from '../../helper/mermaid';
 import { CoreActionReturnType } from '../../core';
 
 export async function mermaid(data: CoreActionReturnType['getFileRelation']) {
+  const rootFile = data.id;
   const params: flowChats.CreateFlowchartsData = {
     links: [],
     itemMap: {},
@@ -17,16 +18,32 @@ export async function mermaid(data: CoreActionReturnType['getFileRelation']) {
       return;
     }
 
-    const { id, next, ...itemInfo } = item;
+    const { id, prev, next, ...itemInfo } = item;
 
     if (!params.itemMap[id]) {
       params.itemMap[id] = {
-        name: itemInfo.attr?.name || itemInfo.name,
+        name: [
+          `${itemInfo.attr?.name || itemInfo.name}`,
+          id === rootFile && '代码变更',
+        ].join('-'),
+        type: id === rootFile ? 'circle' : undefined,
       };
     }
 
+    prev?.forEach((n) => {
+      params.links.push([String(n.id), String(id)]);
+      loop(n);
+    });
+
     next?.forEach((n) => {
-      params.links.push([String(id), String(n.id)]);
+      params.links.push([
+        String(id),
+        String(n.id),
+        {
+          text: '影响',
+          type: 'normal',
+        },
+      ]);
       loop(n);
     });
   }
@@ -38,5 +55,5 @@ export async function mermaid(data: CoreActionReturnType['getFileRelation']) {
     'svg',
   );
 
-  return diskCache.writeFileSync('./comment-relation.svg', String(res));
+  return diskCache.writeFileSync('./stream-doc.svg', String(res));
 }

@@ -23,7 +23,7 @@ export interface FlowChartsNodeShape {
 
 export type FlowChartNodeLinkType =
   | [string, string]
-  | [string, string, { text: string; type: NodeLinkMapTypes['keys'] }];
+  | [string, string, { text: string; type?: NodeLinkMapTypes['keys'] }];
 
 /** 渲染flowCharts流程图数据类型定义 */
 export interface CreateFlowchartsData {

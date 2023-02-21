@@ -17,8 +17,19 @@ async function commentDoc(
     options,
   });
 
-  const res = await instance.getFileRelation(entry[0], 'down');
-  const filePath = await mermaid(res);
+  const entryFile = './src/helper/database/index.ts';
+
+  const [upRelation, downRelation] = await Promise.all([
+    instance.getFileRelation(entryFile, 'up'),
+    instance.getFileRelation(entryFile, 'down'),
+  ]);
+
+  const filePath = await mermaid({
+    ...upRelation,
+    ...downRelation,
+    prev: upRelation.prev,
+    next: downRelation.next,
+  });
   console.info('生成路径:', filePath);
 }
 

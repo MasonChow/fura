@@ -36,10 +36,10 @@ export async function main(config: Config) {
     async getUnusedDeps(...args: Parameters<typeof analysis.getUnusedDeps>) {
       return analysis.getUnusedDeps(...args);
     },
-    async getCommentRelation(
-      ...args: Parameters<typeof analysis.getCommentRelation>
+    async getFileRelation(
+      ...args: Parameters<typeof analysis.getFileRelation>
     ) {
-      return analysis.getCommentRelation(...args);
+      return analysis.getFileRelation(...args);
     },
   };
 }
