@@ -41,13 +41,18 @@ export async function main(config: Config) {
     ) {
       return analysis.getFileRelation(...args);
     },
+    analysis,
   };
 }
 
+type MainReturnType = Awaited<ReturnType<typeof main>>;
+
 export type CoreActionReturnType = {
-  [key in keyof Awaited<ReturnType<typeof main>>]: Awaited<
-    ReturnType<Awaited<ReturnType<typeof main>>[key]>
-  >;
+  [key in keyof MainReturnType]: MainReturnType[key] extends (
+    ...args: any
+  ) => Promise<any>
+    ? Awaited<ReturnType<MainReturnType[key]>>
+    : MainReturnType[key];
 };
 
 export default main;

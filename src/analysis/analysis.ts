@@ -44,9 +44,15 @@ export type FileWithAttr = DatabaseTable['file'] & {
 };
 
 export type GetCommentRelationResult = FileWithAttr & {
-  next?: Array<GetCommentRelationResult> | null;
-  prev?: Array<GetCommentRelationResult> | null;
+  next: Array<GetCommentRelationResult> | null;
+  prev: Array<GetCommentRelationResult> | null;
 };
+
+function createRelationUniqKey(from: number, to: number) {
+  return `${from}_${to}` as const;
+}
+
+export type RelationUniqKeyType = ReturnType<typeof createRelationUniqKey>;
 
 class AnalysisJS {
   /** 配置项 */
@@ -658,6 +664,83 @@ class AnalysisJS {
           npmPkg.type === 'dependencies'
         );
       }),
+    };
+  }
+
+  /**
+   * 获取文件上下游链路数据-平铺格式
+   * @param filePath 目标文件路径
+   */
+  public async getFlattenFileFullRelation(entryFilePath: string) {
+    const res = await this.getFileFullRelation(entryFilePath);
+    const infoMap = new Map<
+      number,
+      Omit<typeof res, 'prev' | 'next'> & { isEntry: boolean }
+    >();
+    const relationMap = new Map<
+      RelationUniqKeyType,
+      { from: number; to: number; type: 'up' | 'down' }
+    >();
+
+    function loop(item: typeof res) {
+      const { id, prev, next, ...itemInfo } = item;
+
+      if (!infoMap.get(id)) {
+        infoMap.set(id, {
+          ...itemInfo,
+          id,
+          isEntry: id === res.id,
+        });
+      }
+
+      prev?.forEach((prevItem) => {
+        const info = {
+          from: prevItem.id,
+          to: id,
+          type: 'up',
+        } as const;
+        relationMap.set(createRelationUniqKey(info.from, info.to), info);
+        loop(prevItem);
+      });
+
+      next?.forEach((nextItem) => {
+        const info = {
+          from: id,
+          to: nextItem.id,
+          type: 'down',
+        } as const;
+        relationMap.set(createRelationUniqKey(info.from, info.to), info);
+        loop(nextItem);
+      });
+    }
+
+    loop(res);
+
+    return {
+      infoMap,
+      relations: Object.values(Object.fromEntries(relationMap)),
+    };
+  }
+
+  /**
+   * 获取文件上下游链路数据-树状
+   * @param filePath 目标文件路径
+   *
+   * @returns prev 上游数据
+   * @returns next 下游数据
+   */
+  public async getFileFullRelation(filePath: string) {
+    logger.info('获取完整的文件关系连路');
+    const [upRelation, downRelation] = await Promise.all([
+      this.getFileRelation(filePath, 'up'),
+      this.getFileRelation(filePath, 'down'),
+    ]);
+
+    return {
+      ...upRelation,
+      ...downRelation,
+      prev: upRelation.prev,
+      next: downRelation.next,
     };
   }
 

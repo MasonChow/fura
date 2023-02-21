@@ -307,3 +307,9 @@ export function replaceSpecialSymbolStr(str: string) {
     '',
   );
 }
+
+export function isJsOrTsFileType(
+  fileType: UtilTypes.FileType,
+): fileType is 'js' | 'ts' {
+  return ['js', 'ts'].includes(fileType);
+}
