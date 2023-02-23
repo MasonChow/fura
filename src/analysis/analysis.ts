@@ -1,6 +1,8 @@
 /**
- * @module 文件夹分析模块
- * @description 主要分析指定文件夹的文件关联
+ * 主要分析指定文件夹的文件关联
+ *
+ * @name 文件夹分析模块
+ * @group module
  */
 
 import lodash from 'lodash';

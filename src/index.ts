@@ -1,5 +1,5 @@
 /**
- * @module 总导出模块
+ * 总导出模块
  */
 
 import core from './core';

@@ -1,5 +1,6 @@
 /**
  * @name 全局通用方法类
+ * @group module
  */
 
 import { fs, path } from './fileReader';

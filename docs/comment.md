@@ -1,21 +1,23 @@
 # 注释使用建议
 
 > 考虑到生成的关系图更精准有效，fura暂时仅对文件头部注释进行特定字段解析使用，解析字段标准参考[typedoc](https://typedoc.org/)
-> 其他代码注释使用标准建议参考[TSDoc](https://tsdoc.org/)
+> 其他代码注释使用标准建议参考[TSDoc](https://tsdoc.org/)、[jsdoc](https://jsdoc.app/)
 
 ## 使用建议
 
 - 使用`@name`声明当前文件主要能力，例如(首页/用户头像组件/首页标题)
-- 使用`@category`声明分类
+- 使用`@group`声明分组
   - 页面: `page`
   - 组件: `component`
   - 模块(js方法类等): `module`
+
+> 更适合的是使用`@category`，考虑到更优化的编辑器提示以及编写，所以还是选择`@group`
 
 ### Example
 
 `route.js`
 
-```jsx
+```tsx
 /**
  * 应用路由声明
  * 
@@ -34,12 +36,12 @@ export default () => (
 
 `layout.js`
 
-```jsx
+```tsx
 /**
  * 首页Layout
  * 
  * @name 首页layout
- * @category component 
+ * @group component 
  * 
  * @privateRemarks
  * 
@@ -54,12 +56,12 @@ export default ({children}) => {
 
 `home.js`
 
-```jsx
+```tsx
 /**
  * 首页入口文件
  * 
  * @name 首页
- * @category page 
+ * @group page 
  * 
  * @privateRemarks
  * 

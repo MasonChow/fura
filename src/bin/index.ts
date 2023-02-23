@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 /**
- * @module 提供用户通过命令行执行
+ * 提供用户通过命令行执行逻辑
+ *
+ * @name cli命令行
+ * @group module
  */
 
 import { cac } from 'cac';
