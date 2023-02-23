@@ -40,7 +40,7 @@
 
 ## 开发约定
 
-- 注释规范使用[tsDoc](https://tsdoc.org/pages/intro/using_tsdoc/)
+- 注释规范参考[TypeDoc](https://typedoc.org/)
 
 ### 参考
 

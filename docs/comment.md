@@ -1,57 +1,74 @@
-# 注释规范
+# 注释使用建议
 
-文件顶部
+> 考虑到生成的关系图更精准有效，fura暂时仅对文件头部注释进行特定字段解析使用，解析字段标准参考[typedoc](https://typedoc.org/)
+> 其他代码注释使用标准建议参考[TSDoc](https://tsdoc.org/)
 
-```javascript
-/** 
-* @page xxx页面(一般是Router下的第一个组件)
-* @module xxx模块和xxx模块
-* @description 补充的详细描述(可选)
-*/
-```
+## 使用建议
 
-函数(function/hook)
+- 使用`@name`声明当前文件主要能力，例如(首页/用户头像组件/首页标题)
+- 使用`@category`声明分类
+  - 页面: `page`
+  - 组件: `component`
+  - 模块(js方法类等): `module`
 
-```javascript
+### Example
+
+`route.js`
+
+```jsx
 /**
-* @function xxxx功能
-* @description 补充的详细描述(可选)
+ * 应用路由声明
+ * 
+ * @privateRemarks
+ * 
+ * 这里的注释并不会解析
 */
-function func(){
+import Home from './home'
 
-}
+export default () => (
+  <Routes>
+    <Route path="/" element={<Home />}>
+  </Routes>
+)
 ```
 
+`layout.js`
 
-组件(Component)
-
-```javascript
+```jsx
 /**
-* @component Demo组件
-* @description 补充的详细描述(可选)
+ * 首页Layout
+ * 
+ * @name 首页layout
+ * @category component 
+ * 
+ * @privateRemarks
+ * 
+ * 这里会解析，识别出是`首页layout组件`
 */
-export default Demo = () => {
-  return <div>demo</div>
+export default ({children}) => {
+  return <div>{children}</div>
 }
+
 ```
 
-组件Props
 
-```javascript
-export interface Props {
-  /** 禁用 */
-  disabled: boolean;
-}
-```
+`home.js`
 
-请求
-
-```javascript
-/** 
-* @api 获取用户信息
-* @description 补充的详细描述(可选)
+```jsx
+/**
+ * 首页入口文件
+ * 
+ * @name 首页
+ * @category page 
+ * 
+ * @privateRemarks
+ * 
+ * 这里会解析，识别出是`首页页面`。
+ * 重复文件的相同注释内容会被解析，仅在识别阶段做警告提醒。
+ * 
 */
-async function getUser(){
-  
-}
+
+import Layout from './Layout';
+
+export default () => <Layout>hello home page</Layout>
 ```
