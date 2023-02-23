@@ -1,11 +1,28 @@
 // TODO import modules 解析
 
+/**
+ * @name TS/JS文件解析器
+ * @group module
+ * @description 基于@babel/traverse进行ast解析
+ */
+
 import * as t from '@babel/types';
 import traverse from '@babel/traverse';
 import { AST } from '../../typings/babel';
 import * as utils from '../../helper/utils';
+import { GetArrayUnionType } from '../../typings/utils';
 
 const COMMON_REG = /\* @(.*)/;
+
+const COMMENT_GROUP_TYPE = ['unknown', 'page', 'component', 'module'] as const;
+
+const BASE_COMMENT_PROPS = {
+  name: '',
+  group: COMMENT_GROUP_TYPE[0],
+  description: '',
+} as const;
+
+type CommonGroupType = GetArrayUnionType<typeof COMMENT_GROUP_TYPE>;
 
 export interface TranslatorOptions {
   // 路径别名 例如 {'@/*': 'src/*'}
@@ -20,6 +37,12 @@ export interface ImportType {
   /** 引入的路径 */
   sourcePath: string;
 }
+
+export type CommentType = {
+  -readonly [key in keyof typeof BASE_COMMENT_PROPS]: key extends 'group'
+    ? CommonGroupType
+    : string;
+};
 
 export interface CommentBlockType {
   /** 块状注释类型 */
@@ -41,7 +64,19 @@ export interface TranslatorReturnType {
   /** 文件导入内容 */
   imports: Array<ImportType>;
   /** 文件评论 */
-  comments: Array<CommentBlockType | CommentLineType>;
+  commentProps: CommentType;
+}
+
+const baseCommentProps: CommentType = {
+  name: '',
+  group: 'unknown',
+  description: '',
+};
+
+const commentPropsKeys = Object.keys(baseCommentProps);
+
+function isValidCommentPropsKey(key: string): key is keyof CommentType {
+  return commentPropsKeys.includes(key);
 }
 
 export function translator(
@@ -95,41 +130,31 @@ export function translator(
     },
   });
 
-  const comments = (ast.comments || []).map((comment) => {
-    // const base = {
-    //   startLine: comment.start,
-    //   endLine: comment.end,
-    // };
+  const comment = (ast.comments || []).find((c) => c.type === 'CommentBlock');
+  const commentProps: CommentType = {
+    ...BASE_COMMENT_PROPS,
+  };
 
-    if (comment.type === 'CommentBlock') {
-      const props = comment.value.split('\n').reduce((pre, cur) => {
-        const matchStr = cur.match(COMMON_REG)?.[1];
+  if (comment) {
+    comment.value.split('\n').forEach((v) => {
+      const matchStr = v.match(COMMON_REG)?.[1];
 
-        if (matchStr) {
-          const [key, ...value] = matchStr.split(/\s/);
+      if (matchStr) {
+        const [key, ...value] = matchStr.split(/\s/);
+        const content = value.join('').trim();
 
-          pre[key] = value.join('');
+        if (isValidCommentPropsKey(key)) {
+          // 临时隐藏
+          // @ts-ignore
+          commentProps[key] = content;
         }
-
-        return pre;
-      }, {} as Record<string, string>);
-
-      return {
-        type: 'block',
-        content: comment.value.trim(),
-        props,
-      } as const;
-    }
-
-    return {
-      type: 'line',
-      content: comment.value.trim(),
-    } as const;
-  });
+      }
+    });
+  }
 
   return {
     imports: result,
-    comments,
+    commentProps,
   };
 }
 

@@ -35,14 +35,13 @@ export interface ProjectTreeNode {
 }
 
 export interface FileAttr {
-  type: 'page' | 'module';
+  type: 'page' | 'module' | 'component' | 'unknown';
   name: string;
   description: string;
-  functions: Array<{ name: string; description: string }>;
 }
 
 export type FileWithAttr = DatabaseTable['file'] & {
-  attr: FileAttr | null;
+  attr: DatabaseTable['file_attr'] | null;
 };
 
 export type GetCommentRelationResult = FileWithAttr & {
@@ -398,59 +397,15 @@ class AnalysisJS {
    */
   private async setFileAttrs(
     filePath: string,
-    comments: ReturnType<TranslatorType['translateJS']>['comments'] = [],
+    commentProps: ReturnType<TranslatorType['translateJS']>['commentProps'],
   ) {
     const { id: fileId } = this.getCacheDataByPath(filePath);
-    // 文件基础属性锁，只允许设置一次
-    let lockFileBaseProps = false;
-
-    const attrs: Array<Partial<DatabaseTable['file_attr']>> = [];
-
-    function appendAttrs(
-      params: Pick<(typeof attrs)[0], 'type' | 'name' | 'description'>,
-    ) {
-      attrs.push({ ...params, file_id: fileId });
-    }
-
-    comments.forEach((comment) => {
-      if (comment.type === 'block') {
-        const commentProps = comment.props;
-
-        if ((commentProps.page || commentProps.module) && !lockFileBaseProps) {
-          const { page, module, ...others } = commentProps;
-          const fileType = page ? 'page' : 'module';
-          const fileName = page || module;
-
-          appendAttrs({
-            type: fileType,
-            name: fileName,
-            description: '',
-          });
-
-          Object.keys(others).forEach((key) => {
-            if (key === 'function') {
-              appendAttrs({
-                type: 'function',
-                name: others[key] || [fileName, 'function'].join('-'),
-                description: '',
-              });
-            }
-          });
-          lockFileBaseProps = true;
-          return;
-        }
-
-        if (commentProps.function) {
-          appendAttrs({
-            type: 'function',
-            name: commentProps.function,
-            description: '',
-          });
-        }
-      }
+    await this.DB.insert('file_attr', {
+      file_id: fileId,
+      name: commentProps.name,
+      type: commentProps.group,
+      description: commentProps.description,
     });
-
-    await this.DB.inserts('file_attr', attrs);
   }
 
   /**
@@ -459,11 +414,11 @@ class AnalysisJS {
    */
   private async analysisFile(filePath: string) {
     const translator = new Translator({ filePath }, this.options);
-    const { imports, comments } = translator.translateJS();
+    const { imports, commentProps } = translator.translateJS();
 
     await Promise.all([
       this.setFileRelations(filePath, imports),
-      this.setFileAttrs(filePath, comments),
+      this.setFileAttrs(filePath, commentProps),
     ]);
   }
 
@@ -866,33 +821,8 @@ class AnalysisJS {
     }
 
     // 以文件为维度，归组所有的属性数据
-    const groupByFileId = lodash.groupBy(dataSource, 'file_id');
-    const result: Record<string, FileAttr> = {};
-
-    // 遍历处理属性数据，改成对象的形式
-    Object.entries(groupByFileId).forEach(([fileId, attrs]) => {
-      const res: FileAttr = {
-        type: 'module',
-        name: '',
-        description: '',
-        functions: [],
-      };
-
-      attrs.forEach((attr) => {
-        const { type, name, description } = attr;
-        if (type === 'function') {
-          res.functions.push({ name, description });
-        } else {
-          res.type = type;
-          res.description = description;
-          res.name = name;
-        }
-      });
-
-      result[fileId] = res;
-    });
-
-    return result;
+    const groupByFileId = lodash.keyBy(dataSource, 'file_id');
+    return groupByFileId;
   }
 
   /**

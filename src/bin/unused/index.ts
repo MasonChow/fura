@@ -31,7 +31,7 @@ async function unused(
   // 批量分析依赖结果
   const results = await Promise.all(
     entry.map((e) => {
-      return instance.getUnusedDeps(e, {
+      return instance.analysis.getUnusedDeps(e, {
         include,
       });
     }),

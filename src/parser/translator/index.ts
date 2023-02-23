@@ -1,3 +1,7 @@
+/**
+ * @description test
+ */
+
 import { parseAsync, TranslatorSource } from '../../helper/ast_creator';
 import { AST } from '../../typings/babel';
 import jsTranslator, { TranslatorOptions, TranslateResult } from './js';

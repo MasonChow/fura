@@ -45,7 +45,7 @@ export interface Table {
   file_attr: {
     id: number;
     file_id: number;
-    type: 'function' | 'module' | 'page';
+    type: 'page' | 'module' | 'component' | 'unknown';
     name: string;
     description: string;
     extra: string;

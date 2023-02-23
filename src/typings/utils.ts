@@ -48,6 +48,9 @@ export interface DirFilesTree {
   children?: DirFilesTree[];
 }
 
+export type GetArrayUnionType<V extends Readonly<Array<string | number>>> =
+  V[number];
+
 export type GetMapValue<V> = V extends Map<any, infer E> ? E : never;
 
 export interface GetObjectEntries<V, K = keyof V> {
@@ -56,3 +59,16 @@ export interface GetObjectEntries<V, K = keyof V> {
 }
 
 export type FileType = 'js' | 'css' | 'ts' | 'less' | 'others';
+
+// copy from https://github.com/total-typescript/ts-reset/blob/main/src/entrypoints/utils.d.ts
+export type WidenLiteral<T> = T extends string
+  ? string
+  : T extends number
+  ? number
+  : T extends boolean
+  ? boolean
+  : T extends bigint
+  ? bigint
+  : T extends symbol
+  ? symbol
+  : T;
