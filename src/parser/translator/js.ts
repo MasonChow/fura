@@ -10,7 +10,7 @@ import * as t from '@babel/types';
 import traverse from '@babel/traverse';
 import { AST } from '../../typings/babel';
 import * as utils from '../../helper/utils';
-import { GetArrayUnionType } from '../../typings/utils';
+import { ReadonlyArrayUnionType } from '../../typings/utils';
 
 const COMMON_REG = /\* @(.*)/;
 
@@ -22,7 +22,7 @@ const BASE_COMMENT_PROPS = {
   description: '',
 } as const;
 
-type CommonGroupType = GetArrayUnionType<typeof COMMENT_GROUP_TYPE>;
+type CommonGroupType = ReadonlyArrayUnionType<typeof COMMENT_GROUP_TYPE>;
 
 export interface TranslatorOptions {
   // 路径别名 例如 {'@/*': 'src/*'}

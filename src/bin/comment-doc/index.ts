@@ -36,7 +36,7 @@ async function commentDoc(
       !fromData ||
       !isJsOrTsFileType(fromData.type) ||
       !toData ||
-      isJsOrTsFileType(toData.type)
+      !isJsOrTsFileType(toData.type)
     ) {
       return;
     }
@@ -56,15 +56,16 @@ async function commentDoc(
     params.links.push([String(fromId), String(toId)]);
   });
 
-  const svgFile = await conversionToMedia(
-    flowChats.createFlowcharts(params),
-    'svg',
-  );
+  const flowChatsContent = flowChats.createFlowcharts(params);
+
+  const svgFile = await conversionToMedia(flowChatsContent, 'svg');
 
   const filePath = diskCache.writeFileSync(
     './comment-relation.svg',
     String(svgFile),
   );
+
+  diskCache.writeFileSync('./comment-relation.txt', String(flowChatsContent));
 
   console.info('生成结果路径:', filePath);
 }

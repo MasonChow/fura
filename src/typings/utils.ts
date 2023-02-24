@@ -48,10 +48,10 @@ export interface DirFilesTree {
   children?: DirFilesTree[];
 }
 
-export type GetArrayUnionType<V extends Readonly<Array<string | number>>> =
+export type ReadonlyArrayUnionType<V extends Readonly<Array<unknown>>> =
   V[number];
 
-export type GetMapValue<V> = V extends Map<any, infer E> ? E : never;
+export type GetMapValue<V> = V extends Map<unknown, infer E> ? E : never;
 
 export interface GetObjectEntries<V, K = keyof V> {
   keys: K;
