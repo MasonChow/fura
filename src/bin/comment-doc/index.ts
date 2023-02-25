@@ -5,7 +5,7 @@
  * @group module
  */
 // import lodash from 'lodash';
-// import ora from 'ora';
+import ora from 'ora';
 import { Config, CommonOptions } from '../helper/type';
 import core from '../../core';
 import {
@@ -21,13 +21,17 @@ async function commentDoc(
   entry: Required<Config>['entry'],
   options: CommonOptions,
 ) {
+  const spinner = ora('分析项目代码').start();
   const instance = await core({
     cwd: target,
     options,
   });
+  spinner.text = '解析文件关系';
 
   const { infoMap, relations } =
     await instance.analysis.getFlattenFileFullRelation(entry[1]);
+
+  spinner.text = '分析生成结果';
 
   const params: flowChats.CreateFlowchartsData = {
     links: [],
@@ -114,7 +118,7 @@ async function commentDoc(
   // );
 
   // diskCache.writeFileSync('./comment-relation.mmd', String(flowChatsContent));
-
+  spinner.stop();
   // console.info('生成结果路径:', filePath);
   console.info('生成结果:', url);
 }

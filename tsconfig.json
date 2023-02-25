@@ -16,10 +16,10 @@
     "moduleResolution": "node",
     "declarationDir": "./dist",
     "baseUrl": "./src",
-    "outDir": "./dist"
+    "outDir": "./dist",
   },
   "include": [
-    "src"
+    "./src"
   ],
   "exclude": [
     "node_modules",

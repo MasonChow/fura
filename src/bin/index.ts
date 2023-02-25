@@ -7,6 +7,7 @@
  */
 
 import { cac } from 'cac';
+
 import { getConfig, getPackageJSON, getCwd } from './helper/utils';
 import unused, { Options as unUsedOptions } from './unused';
 import commentDoc from './comment-doc';
@@ -47,7 +48,7 @@ cli
 
 cli
   .command(
-    'comment-doc [path]',
+    'schema [path]',
     '指定入口文件分析项目内无效依赖项目, 默认拿当前执行目录',
   )
   .option('-c,-config <configPath>', '指定配置文件地址')
