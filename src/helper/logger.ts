@@ -1,5 +1,5 @@
 /**
- * @module 配置logger相关
+ * @name 通用logger方法
  */
 
 import debug from 'debug';

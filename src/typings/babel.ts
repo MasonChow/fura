@@ -1,5 +1,5 @@
 /**
- * @module babel相关的类型
+ * babel相关的类型
  */
 
 import types from '@babel/types';

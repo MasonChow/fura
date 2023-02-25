@@ -1,13 +1,20 @@
 /**
- * @module 输出文件依赖关系
+ * 通过注释生成关联文档内容
+ *
+ * @name 生成项目文档内容
+ * @group module
  */
 // import lodash from 'lodash';
 // import ora from 'ora';
 import { Config, CommonOptions } from '../helper/type';
 import core from '../../core';
-import { conversionToMedia, flowChats } from '../../helper/mermaid';
+import {
+  // conversionToMedia,
+  conversionOriginUrl,
+  flowChats,
+} from '../../helper/mermaid';
 import { isJsOrTsFileType } from '../../helper/utils';
-import diskCache from '../../helper/diskCache';
+// import diskCache from '../../helper/diskCache';
 
 async function commentDoc(
   target: string,
@@ -20,12 +27,15 @@ async function commentDoc(
   });
 
   const { infoMap, relations } =
-    await instance.analysis.getFlattenFileFullRelation(entry[0]);
+    await instance.analysis.getFlattenFileFullRelation(entry[1]);
 
   const params: flowChats.CreateFlowchartsData = {
     links: [],
     itemMap: {},
   };
+
+  const simpleRelationMap = new Map<number, number[]>();
+  const simpleRelations = new Set<`${number}-${number}`>();
 
   relations.forEach((rel) => {
     const fromData = infoMap.get(rel.from);
@@ -44,30 +54,69 @@ async function commentDoc(
     const fromId = fromData.id;
     const toId = toData.id;
 
-    params.itemMap[fromId] = {
-      name: fromData.attr?.name || fromData.name,
-      type: fromData.isEntry ? 'circle' : undefined,
-    };
+    simpleRelationMap.set(fromId, [
+      ...(simpleRelationMap.get(fromId) || []),
+      toId,
+    ]);
+  });
 
-    params.itemMap[toId] = {
-      name: fromData.attr?.name || fromData.name,
-    };
+  function getAvailableNextIds(nextId: number): number[] {
+    const info = infoMap.get(nextId)!;
 
-    params.links.push([String(fromId), String(toId)]);
+    if (info.attr?.name) {
+      return [nextId];
+    }
+
+    const nextRelation = simpleRelationMap.get(nextId);
+
+    if (nextRelation) {
+      return nextRelation.map(getAvailableNextIds).flat();
+    }
+
+    return [];
+  }
+
+  [...simpleRelationMap.keys()].forEach((fromId) => {
+    const fromData = infoMap.get(fromId)!;
+    const nextIds = simpleRelationMap.get(fromId)!;
+
+    if (fromData.attr?.name) {
+      params.itemMap[fromId] = {
+        name: fromData.attr.name,
+        type: fromData.isEntry ? 'circle' : undefined,
+      };
+
+      const simpleRelation = nextIds.map(getAvailableNextIds).flat();
+
+      simpleRelation.forEach((nextId) => {
+        const nextData = infoMap.get(nextId)!;
+        const uniqRelation = `${fromId}-${nextId}` as const;
+        params.itemMap[nextId] = {
+          name: nextData.attr?.name || nextData.name,
+        };
+
+        if (!simpleRelations.has(uniqRelation)) {
+          simpleRelations.add(uniqRelation);
+          params.links.push([String(fromId), String(nextId)]);
+        }
+      });
+    }
   });
 
   const flowChatsContent = flowChats.createFlowcharts(params);
 
-  const svgFile = await conversionToMedia(flowChatsContent, 'svg');
+  // const svgFile = await conversionToMedia(flowChatsContent, 'svg');
+  const url = conversionOriginUrl(flowChatsContent);
 
-  const filePath = diskCache.writeFileSync(
-    './comment-relation.svg',
-    String(svgFile),
-  );
+  // const filePath = diskCache.writeFileSync(
+  //   './comment-relation.svg',
+  //   String(svgFile),
+  // );
 
-  diskCache.writeFileSync('./comment-relation.txt', String(flowChatsContent));
+  // diskCache.writeFileSync('./comment-relation.mmd', String(flowChatsContent));
 
-  console.info('生成结果路径:', filePath);
+  // console.info('生成结果路径:', filePath);
+  console.info('生成结果:', url);
 }
 
 export default commentDoc;

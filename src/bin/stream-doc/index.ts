@@ -1,5 +1,5 @@
 /**
- * @module 输出文件依赖关系
+ * @name 根据文件变更输出影响链路
  */
 // import lodash from 'lodash';
 // import ora from 'ora';

@@ -4,13 +4,15 @@
 
 import axios from 'axios';
 import { v4 as uuidV4 } from 'uuid';
+import pako from 'pako';
 import logger from '../logger';
 
 // 导出流程图所有模块内容
 export * as flowChats from './flowChats';
 
 // 这个服务不保障稳定性，如果有需要可自建服务
-const baseURL = 'http://kroki.mason.local';
+const baseURL = 'https://kroki.mason.pub';
+const officialBaseUrl = 'https://kroki.io';
 // https://docs.kroki.io/kroki/setup/use-docker-or-podman/
 const fetchFromKroki = axios.create({
   baseURL,
@@ -63,4 +65,17 @@ export async function conversionToMedia(
   logger.info('执行请求kroki服务获取内容完成');
 
   return res.data;
+}
+
+export function conversionOriginUrl(
+  content: string,
+  type: 'svg' | 'png' = 'svg',
+) {
+  const data = Buffer.from(content, 'utf8');
+  const compressed = pako.deflate(data, { level: 9 });
+  const result = Buffer.from(compressed)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+  return `${officialBaseUrl}/mermaid/${type}/${result}`;
 }

@@ -1,5 +1,5 @@
 /**
- * @module utils.ts内用到的类型
+ * utils.ts内用到的类型
  */
 
 export interface DirType {

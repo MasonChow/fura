@@ -2,7 +2,7 @@
 /**
  * 提供用户通过命令行执行逻辑
  *
- * @name cli命令行
+ * @name cli命令声明
  * @group module
  */
 

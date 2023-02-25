@@ -1,5 +1,5 @@
 /**
- * @module 分析未使用文件
+ * @name 输出项目未使用第三包以及文件依赖
  */
 import lodash from 'lodash';
 // import ora from 'ora';

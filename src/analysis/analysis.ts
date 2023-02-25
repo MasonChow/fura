@@ -1,7 +1,7 @@
 /**
  * 主要分析指定文件夹的文件关联
  *
- * @name 文件夹分析模块
+ * @name 文件分析模块
  * @group module
  */
 
@@ -632,7 +632,9 @@ class AnalysisJS {
     const res = await this.getFileFullRelation(entryFilePath);
     const infoMap = new Map<
       number,
-      Omit<typeof res, 'prev' | 'next'> & { isEntry: boolean }
+      Omit<typeof res, 'prev' | 'next'> & {
+        isEntry: boolean;
+      }
     >();
     const relationMap = new Map<
       RelationUniqKeyType,
@@ -667,7 +669,9 @@ class AnalysisJS {
           type: 'down',
         } as const;
         relationMap.set(createRelationUniqKey(info.from, info.to), info);
-        loop(nextItem);
+        loop({
+          ...nextItem,
+        });
       });
     }
 

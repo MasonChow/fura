@@ -1,5 +1,5 @@
 /**
- * @module 主要入口模块，提供对应的操作api
+ * @name 集成api方法提供
  */
 
 import Analysis from '../analysis';

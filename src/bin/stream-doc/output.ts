@@ -1,5 +1,5 @@
 /**
- * @module 输出结果模块
+ * 输出结果模块
  */
 
 import diskCache from '../../helper/diskCache';

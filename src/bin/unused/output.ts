@@ -1,12 +1,12 @@
 /**
- * @module 输出分析结果
+ * 输出解析结果
  */
 
 import Table from 'easy-table';
 // import lodash from 'lodash';
 
 /**
- * @function 打印日志到控制台
+ * 打印日志到控制台
  */
 export function printConsole(
   files: Array<{
