@@ -714,7 +714,7 @@ class AnalysisJS {
     rootFilePath: string,
     type: 'up' | 'down' = 'down',
   ) {
-    logger.info('获取注释关系图');
+    logger.info('获取注释关系图', this.targetDir, rootFilePath);
     const entryFileAbsolutePath = path.join(this.targetDir, rootFilePath);
     const lock = new Set<number>();
     const isUpType = type === 'up';

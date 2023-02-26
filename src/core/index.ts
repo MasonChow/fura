@@ -1,5 +1,5 @@
 /**
- * @name 集成api方法提供
+ * @name 集成封装api方法
  */
 
 import Analysis from '../analysis';

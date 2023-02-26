@@ -304,7 +304,7 @@ export function transformAliasPath(
 
 export function replaceSpecialSymbolStr(str: string) {
   return str.replace(
-    /[`~!@#$^\-&*()=|{}':;',\\[\].<>/?~！@#￥……&*（）——|{}【】'；：""'。，、？\s]/g,
+    /[`~!@#$^\-&*()=|{}':;',\\[\].<>/?~！@#￥……&*（）——|{}【】」「'；：""'。，、？\s]/g,
     '',
   );
 }

@@ -1,5 +1,5 @@
 /**
- * 总导出模块
+ * @name npm包根导出
  */
 
 import core from './core';

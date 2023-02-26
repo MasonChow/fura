@@ -1,5 +1,6 @@
 /**
- * @name cli工具类
+ * cli工具类
+ *
  * @group module
  */
 

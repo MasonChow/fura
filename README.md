@@ -2,6 +2,8 @@
 
 文件使用关系分析(File usage relationship analysis)
 
+> alpha测试阶段，api不稳定
+
 ## 背景
 
 秉着学习进步的基础原则，自己造一次轮子来实现需求
@@ -11,31 +13,75 @@
 - 生成项目目录树
 - 分析项目未使用的npm包
 
-## TODO
-
 ### MVP
 
 - [x] 解析js文件并分析依赖
-- [ ] cli工具能力提供
+- [x] cli工具能力提供
 - [x] 识别函数对应的注释
 - [x] 日志统一/输出
 
 ### P1
 
+- [ ] 完整使用文档提供
 - [ ] 循环依赖识别警告
 - [ ] 可基于git仓库进行分析
 - [x] 支持多入口识别未使用文件分析
-- [ ] 支持全局命令执行
-- [ ] 使用ora做loading优化
+- [x] 支持多入口文件关系识别分析
+- [x] 使用ora做loading优化
 - [ ] 生成svg节点可跳转对应仓库/本地文件
 
 ### P2
 
 - [x] 缓存生成
 - [ ] package.json使用type=module
+- [ ] 支持自建mermaid服务
 - [ ] 完善代码注释
 
 ## 如何使用
+
+**1.安装**
+
+`npm i fura --save-dev`
+
+**2.项目根目录增加`.furarc`配置**
+
+example
+
+```json
+{
+  "alias": {
+    "@": "./src"
+  },
+  // 识别的入口文件(必须)
+  "entry": [
+    "./src/index.ts",
+    "./src/bin/index.ts"
+  ],
+  // 包含的目录(可选,无则根目录)
+  "include": [
+    "./src"
+  ],
+  // 忽略的目录名(可选)
+  "exclude": [
+    "dist"
+  ]
+}
+```
+
+**3.运行命令 fura \<action\>**
+
+`fura unused` 分析项目内未使用的文件以及npm依赖
+
+- npm依赖仅分析`dependencies`内部依赖
+  - 注意会识别出仅开发需要使用的依赖却安装到`dependencies`上的，例如`eslint`
+
+`fura schema`
+
+基于`.furarc`配置的`entry`内容进行依赖分析输出`svg`内容
+
+### cli
+
+### 代码注释建议
 
 - 使用`@name`声明当前文件主要能力，例如(首页/用户头像组件/首页标题)
 - 使用`@group`声明分组
@@ -47,7 +93,7 @@
 
 ### 落地效果
 
-![./.fura/comment-relation.svg](https://kroki.io/mermaid/svg/eNpNkM9OwkAQxu88hUc4kNB2A01IfADjSbxtPBBjkIREwhNwKaARwYCIVlSChMYQlPgHa9P6Mjvb9i3ccbuJt1--b2a-mak0yvXjrd29YkozKR-1mfcJnRa_73NnCpPrg2JKz9Fw-MA7_XjqhvZK1PDpDFoWrFx0dXpYq8JmDtYmXHuoGOk0Spc-855g9srHF5mMkAnljy7vrpKQ3pjb71EwgPY3-GsYdONBEG1ecECeSj0JvHtm_k84dMLlkn2dwrnFvDn0zuQcFkyijxF2mTS2W2LNcr3KRy5_u-K9PgtsYRmExs1bMaF2UqkcNaSLeoGC5cC6KV2pyyOIRvdLOyWZES1m4iFw4_xdl81u67qCvIKcAoI_QTBxJwGaib8VYJAEiKaUAiYloOdVV-4_YJcErCHKIsoi0voFahbNxQ==)
+![./.fura/comment-relation.svg](https://kroki.io/mermaid/svg/eNpVkM1Kw0AURvc-hct0UWhpw2QQfABxZd0NLopILFQNfYK6SFpFtGKNP7VqSItBSm0RrTG2vszcSfIW3jGJ4O5w7uW734zeqBq7y-sbK0ukxITd4sE7tC1x3xGeA_2rLfQqC7sPot2JHT_sjXFHOC5YJox9OSVsu16D2RDMWTgNpNEURarzOQ8G4E7E9Wkuh5qyaHEBrc805u6Zz7_DrheORvzjCE5MHgzh7DipwBf96M3GMK3I4p6Fx2FyGLlm1agJ2xevl3JEWNy8xYT6ga7vNP48LTAwPZg2k2nik2q0qCj7xh4eE48-vHxhG1mNltlmZa2SnI6eXHw93Hi_-_n8qlaUNRBISX6SNCQFWs6gIFNSIJpcJhnQDFT5W2kgoRmo_4CkgDk_uIC5FQ==)
 
 
 ### 使用介绍

@@ -6,17 +6,18 @@
  */
 // import lodash from 'lodash';
 import ora from 'ora';
-import { Config, CommonOptions } from '../helper/type';
-import core from '../../core';
+import { Config, CommonOptions } from './helper/type';
+import core from '../core';
 import {
   // conversionToMedia,
   conversionOriginUrl,
   flowChats,
-} from '../../helper/mermaid';
-import { isJsOrTsFileType } from '../../helper/utils';
-// import diskCache from '../../helper/diskCache';
+} from '../helper/mermaid';
+import { isJsOrTsFileType } from '../helper/utils';
+import diskCache from '../helper/diskCache';
+import { GetMapValue } from '../typings/utils';
 
-async function commentDoc(
+async function schema(
   target: string,
   entry: Required<Config>['entry'],
   options: CommonOptions,
@@ -28,8 +29,31 @@ async function commentDoc(
   });
   spinner.text = '解析文件关系';
 
-  const { infoMap, relations } =
-    await instance.analysis.getFlattenFileFullRelation(entry[1]);
+  const results = await Promise.all(
+    entry.map((entryFile) =>
+      instance.analysis.getFlattenFileFullRelation(entryFile),
+    ),
+  );
+
+  // 把多个map合成一个
+  const infoMap = results
+    .map((e) => e.infoMap)
+    .reduce((pre, cur) => {
+      [...cur.keys()].forEach((key) => {
+        const preItem = pre.get(key);
+        const curItem = cur.get(key)!;
+        // 避免合并map的过程中覆盖了isEntry字段
+        if (preItem && preItem.isEntry) {
+          curItem.isEntry = true;
+        }
+        pre.set(key, curItem);
+      });
+
+      return pre;
+    }, new Map<number, GetMapValue<Awaited<ReturnType<typeof instance.analysis.getFlattenFileFullRelation>>['infoMap']>>());
+
+  // 把多个relations合成一个
+  const relations = results.map((e) => e.relations).flat();
 
   spinner.text = '分析生成结果';
 
@@ -40,6 +64,7 @@ async function commentDoc(
 
   const simpleRelationMap = new Map<number, number[]>();
   const simpleRelations = new Set<`${number}-${number}`>();
+  const lock = new Set<`${number}-${number}`>();
 
   relations.forEach((rel) => {
     const fromData = infoMap.get(rel.from);
@@ -74,7 +99,16 @@ async function commentDoc(
     const nextRelation = simpleRelationMap.get(nextId);
 
     if (nextRelation) {
-      return nextRelation.map(getAvailableNextIds).flat();
+      return nextRelation
+        .map((nextRelationId) => {
+          const lockKey = `${nextId}-${nextRelationId}` as const;
+          if (lock.has(lockKey)) {
+            return [];
+          }
+          lock.add(lockKey);
+          return getAvailableNextIds(nextRelationId);
+        })
+        .flat();
     }
 
     return [];
@@ -112,15 +146,9 @@ async function commentDoc(
   // const svgFile = await conversionToMedia(flowChatsContent, 'svg');
   const url = conversionOriginUrl(flowChatsContent);
 
-  // const filePath = diskCache.writeFileSync(
-  //   './comment-relation.svg',
-  //   String(svgFile),
-  // );
-
-  // diskCache.writeFileSync('./comment-relation.mmd', String(flowChatsContent));
+  diskCache.writeFileSync('./comment-relation.mmd', String(flowChatsContent));
   spinner.stop();
-  // console.info('生成结果路径:', filePath);
   console.info('生成结果:', url);
 }
 
-export default commentDoc;
+export default schema;
