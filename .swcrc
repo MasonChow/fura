@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/swcrc",
+  "jsc": { // 编译规则 
+    "target": "es2022", // 输出js的规范 
+    "parser": {
+      "syntax": "typescript",
+      "dynamicImport": true
+    }
+  },
+  "module": {
+    "type": "commonjs",
+    "strict": true
+  }
+}

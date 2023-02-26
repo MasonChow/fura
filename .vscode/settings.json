@@ -1,0 +1,7 @@
+{
+  "cSpell.words": [
+    "jscodeshift",
+    "Kroki"
+  ],
+  "typescript.tsdk": "node_modules/typescript/lib"
+}

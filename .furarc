@@ -1,0 +1,12 @@
+{
+  "alias": {
+    "@": "./src"
+  },
+  "entry": [
+    "./src/index.ts",
+    "./src/bin/index.ts"
+  ],
+  "include": [
+    "./src"
+  ]
+}
