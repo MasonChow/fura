@@ -8,7 +8,8 @@
   },
   "scripts": {
     "build:tsc": "rm -rf ./dist && tsc",
-    "build:swc": "rm -rf ./dist && swc ./src -d ./dist && tsc --emitDeclarationOnly --outDir dist"
+    "build:swc": "rm -rf ./dist && swc ./src -d ./dist && tsc --emitDeclarationOnly --outDir dist",
+    "prerelease": "pnpm build:swc && npm version prerelease && npm publish"
   },
   "keywords": [],
   "authors": [
