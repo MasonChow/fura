@@ -1,4 +1,8 @@
 // ast构造器
+/**
+ * @name ast构造器
+ */
+
 import * as parser from '@babel/parser';
 import { fs } from './fileReader';
 import logger from './logger';
@@ -13,7 +17,7 @@ export interface TranslatorSource {
 const config: parser.ParserOptions = {
   sourceType: 'module',
   attachComment: true,
-  plugins: ['dynamicImport', 'jsx', 'typescript'],
+  plugins: ['dynamicImport', 'jsx', 'typescript', 'classProperties'],
 };
 
 // 同步方式
