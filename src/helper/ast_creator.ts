@@ -1,4 +1,8 @@
 // ast构造器
+/**
+ * @name ast构造器
+ */
+
 import * as parser from '@babel/parser';
 import { fs } from './fileReader';
 import logger from './logger';
