@@ -9,7 +9,9 @@
   "scripts": {
     "build:tsc": "rm -rf ./dist && tsc",
     "build:swc": "rm -rf ./dist && swc ./src -d ./dist && tsc --emitDeclarationOnly --outDir dist",
-    "prerelease": "pnpm build:swc && npm version prerelease && npm publish"
+    "prerelease": "pnpm build:swc && npm version prerelease && npm publish --tag beta",
+    "release:major": "pnpm build:swc && npm version major && npm publish",
+    "release:patch": "pnpm build:swc && npm version patch && npm publish"
   },
   "keywords": [],
   "authors": [
