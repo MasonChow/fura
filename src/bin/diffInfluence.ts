@@ -1,11 +1,12 @@
 /**
- * 通过注释生成关联文档内容
+ * 获取两次git版本变更的影响范围
  *
- * @name 生成项目文档内容
+ * @name 基于变更获取影响范围
  * @group module
  */
 // import lodash from 'lodash';
 import ora from 'ora';
+import Table from 'easy-table';
 import { Config, CommonOptions } from './helper/type';
 import core from '../core';
 import {
@@ -15,11 +16,27 @@ import {
 } from '../helper/mermaid';
 import diskCache from '../helper/diskCache';
 
-async function schema(
+async function diffInfluence(
   target: string,
   entry: Required<Config>['entry'],
   options: CommonOptions,
 ) {
+  console.info(`当前项目变更代码文件为: \n`);
+  const diffTable = new Table();
+  entry.forEach((name) => {
+    diffTable.cell('name', name);
+    diffTable.newRow();
+  });
+  diffTable.total('name', {
+    printer: (val) => {
+      return `count: ${val}`;
+    },
+    reduce: (acc, val, idx) => {
+      return idx + 1;
+    },
+  });
+  console.info(diffTable.toString());
+
   const spinner = ora('分析项目代码').start();
   const instance = await core({
     cwd: target,
@@ -60,13 +77,12 @@ async function schema(
 
   const flowChatsContent = flowChats.createFlowcharts(params);
 
-  // const svgFile = await conversionToMedia(flowChatsContent, 'svg');
   const url = conversionOriginUrl(flowChatsContent);
 
   spinner.text = '写入本地缓存';
 
   const cachePath = diskCache.writeFileSync(
-    './comment-relation.mmd',
+    './git-diff.mmd',
     String(flowChatsContent),
   );
 
@@ -76,4 +92,4 @@ async function schema(
   console.info('结果mermaid内容:', cachePath);
 }
 
-export default schema;
+export default diffInfluence;

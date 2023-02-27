@@ -9,8 +9,10 @@
 import { cac } from 'cac';
 
 import { getConfig, getPackageJSON, getCwd } from './helper/utils';
+import * as git from '../helper/git';
 import unused, { Options as unUsedOptions } from './unused';
 import schema from './schema';
+import diffInfluence from './diffInfluence';
 
 const cli = cac('fura');
 const cwd = getCwd();
@@ -40,16 +42,48 @@ cli
 cli
   .command('schema', '基于入口文件生成关系图')
   .option('-c,-config <configPath>', '指定配置文件地址')
-  // .option('-o,-output <outputPath>', '输出文件的地址')
-  // .option(
-  //   '-t,-type [type]',
-  //   '指定输出的报告类型 log,html,excel,canvas,json(Default is json)',
-  // )
   .action(async ({ c }: { c?: string }) => {
-    // const config = getConfig(c);
     const config = getConfig(c);
 
     await schema(cwd, config('entry', true), {
+      alias: config('alias'),
+      exclude: config('exclude'),
+      include: config('include', true),
+    });
+    process.exit(0);
+  });
+
+cli
+  .command('diff influence <target-branch>', '变更影响范围')
+  .option('-c,-config <configPath>', '指定配置文件地址')
+  .action(async (target, { c }: { c?: string }) => {
+    console.info('基于git diff分析代码变更，当前对比目标分支为:', target);
+
+    const config = getConfig(c);
+    const localDiffFiles = git.getDiffFiles();
+    let params: { local: string; remote: string } | undefined;
+
+    if (target) {
+      if (localDiffFiles) {
+        console.warn(
+          '[warning] 当前还有未提交到远端内容，将会合并本地内容和当前分支远端内容进行配对',
+        );
+      }
+
+      params = {
+        local: git.getBranch(),
+        remote: target,
+      };
+    }
+
+    const files = [
+      ...new Set([
+        ...git.getDiffFiles(params).split('\n'),
+        ...localDiffFiles.split('\n'),
+      ]),
+    ];
+
+    await diffInfluence(cwd, files, {
       alias: config('alias'),
       exclude: config('exclude'),
       include: config('include', true),

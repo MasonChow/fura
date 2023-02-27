@@ -29,6 +29,7 @@
 - [x] 支持多入口文件关系识别分析
 - [x] 使用ora做loading优化
 - [ ] 生成svg节点可跳转对应仓库/本地文件
+- [ ] cli命令行可视化交互
 
 ### P2
 
@@ -78,6 +79,10 @@ example
 `fura schema`
 
 基于`.furarc`配置的`entry`内容进行依赖分析输出`svg`内容
+
+`fura diff influence <target branch>`
+
+指定目标分支进行代码diff关系链路识别，不指定`target branch`则分析本地变更与当前分支远端变更的差异
 
 ### cli
 

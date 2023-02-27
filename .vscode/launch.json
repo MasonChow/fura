@@ -10,7 +10,7 @@
         "<node_internals>/**"
       ],
       "args": [
-        "${workspaceFolder}/dist/bin/index.js",
+        "${workspaceFolder}/dist/bin/index.ts",
         "unused",
       ]
     },
@@ -31,7 +31,7 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "stream-doc",
+      "name": "diff-influence",
       "envFile": "${workspaceFolder}/.env",
       "skipFiles": [
         "<node_internals>/**"
@@ -39,7 +39,8 @@
       "program": "${workspaceFolder}/node_modules/ts-node/dist/bin.js",
       "args": [
         "${workspaceFolder}/src/bin/index.ts",
-        "stream-doc",
+        "diff influence",
+        "alpha"
       ]
     },
     {
@@ -53,7 +54,6 @@
       "program": "${workspaceFolder}/node_modules/ts-node/dist/bin.js",
       "args": [
         "${workspaceFolder}/src/bin/index.ts",
-        "unused",
         "-h",
       ]
     },
