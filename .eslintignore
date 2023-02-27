@@ -1,0 +1,5 @@
+dist/*
+dev/*
+debug/*
+build/*
+spack.config.js
