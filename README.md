@@ -80,13 +80,13 @@ example
 
 基于`.furarc`配置的`entry`内容进行依赖分析输出`svg`内容
 
-`fura diff influence <target branch>`
+`fura diff-influence <target branch>`
 
 指定目标分支进行代码diff关系链路识别，不指定`target branch`则分析本地变更与当前分支远端变更的差异
 
 ### cli
 
-### 代码注释建议
+**代码注释建议**
 
 - 使用`@name`声明当前文件主要能力，例如(首页/用户头像组件/首页标题)
 - 使用`@group`声明分组
@@ -96,12 +96,12 @@ example
 
 > 更适合的是使用`@category`，考虑到更优化的编辑器提示以及编写，所以还是选择`@group`
 
-### 落地效果
+**落地效果**
 
 ![./.fura/comment-relation.svg](https://kroki.io/mermaid/svg/eNpVkM1Kw0AURvc-hct0UWhpw2QQfABxZd0NLopILFQNfYK6SFpFtGKNP7VqSItBSm0RrTG2vszcSfIW3jGJ4O5w7uW734zeqBq7y-sbK0ukxITd4sE7tC1x3xGeA_2rLfQqC7sPot2JHT_sjXFHOC5YJox9OSVsu16D2RDMWTgNpNEURarzOQ8G4E7E9Wkuh5qyaHEBrc805u6Zz7_DrheORvzjCE5MHgzh7DipwBf96M3GMK3I4p6Fx2FyGLlm1agJ2xevl3JEWNy8xYT6ga7vNP48LTAwPZg2k2nik2q0qCj7xh4eE48-vHxhG1mNltlmZa2SnI6eXHw93Hi_-_n8qlaUNRBISX6SNCQFWs6gIFNSIJpcJhnQDFT5W2kgoRmo_4CkgDk_uIC5FQ==)
 
 
-### 使用介绍
+#### 使用介绍
 
 `home.js`
 

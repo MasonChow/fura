@@ -39,8 +39,7 @@
       "program": "${workspaceFolder}/node_modules/ts-node/dist/bin.js",
       "args": [
         "${workspaceFolder}/src/bin/index.ts",
-        "diff-influence",
-        "alpha"
+        "diff-influence"
       ]
     },
     {

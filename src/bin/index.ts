@@ -54,7 +54,7 @@ cli
   });
 
 cli
-  .command('diff-influence <target-branch>', '变更影响范围')
+  .command('diff-influence [target-branch]', '变更影响范围')
   .option('-c,-config <configPath>', '指定配置文件地址')
   .action(async (target, { c }: { c?: string }) => {
     console.info('基于git diff分析代码变更，当前对比目标分支为:', target);
