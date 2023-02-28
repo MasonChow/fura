@@ -81,9 +81,19 @@ example
 
 基于`.furarc`配置的`entry`内容进行依赖分析输出`svg`内容
 
-`fura diff-influence <target branch>`
+`fura diff-influence [target branch]`
 
 指定目标分支进行代码diff关系链路识别，不指定`target branch`则分析本地变更与当前分支远端变更的差异
+
+`fura pkg <packages>`
+
+指定包名分析对应的代码依赖路径，一般用于升级包版本评估影响范围用
+
+**example**
+
+`fura pkg @babel/parser lodash`
+
+![npm-pkg-relation.svg][https://kroki.io/mermaid/svg/eNp9kstOwkAUhvc-hUtckJC2oTMx8QGMGqPuJsZUJUisiuDSBUaLl3DRcPFSbwSNxBCEgBdA9GV6puUtnLEGcUjcfv__n_OfaYMRLbwyPDEzOqRKhOb3rfYLHMTp9TEtFeDqdJ5xhcBNy2qlIH1GzYaTeoV0Hjo1yCSdxC6YDe5RyZIegpOO1b6DYpWepThExM7e0IPjqelJ6-PKec6DUXd2shA3oNLkBvxj6Baatllh22mh2FORjzgfGdhv_aiXj1bn086W7HLZejuEhGG17yF95HZ25_OURLpmnM2E6o5TNLRwiOabtJ7jkky06Ba93uvGbuG8xMn3aXYhFt3UJ0JbAZpJWp3L3wAm3dgFW6lvBIOBSI9jiYBRglrMVV1u19pcksl6eI2Vo7dNeHpn7Tn0k7nZ8Vm3qfNQZK_r7mfW6dXggoQ8nkVtMaCHtUg0EPG6Dz0y0jMoPo9H31jWoiuDmoS83rFt22zQ1L37VbaR3JccUFXpPxX5_lUl_p9wDO85dvr3qj8A-0UwEMEiUPhn6wO8IRqIKP2AD1X7I4oIkAiwAPilKhKHYgEgnwCwLDpkoSn2C-cj5a_jC85AshY=]
 
 ### cli
 

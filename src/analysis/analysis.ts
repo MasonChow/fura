@@ -648,7 +648,7 @@ class AnalysisJS {
    */
   public async getFlattenFileFullRelation(entryFilePath: string) {
     const fileId = this.getFileIdByPath(entryFilePath);
-
+    logger.info('通过文件路径换取文件id', entryFilePath, fileId);
     return this.getFlattenFileFullRelationById(fileId);
   }
 
@@ -719,7 +719,7 @@ class AnalysisJS {
    * @returns next 下游数据
    */
   private async getFileFullRelation(entryFileId: number) {
-    logger.info('获取完整的文件关系连路');
+    logger.info('获取完整的文件关系连路', entryFileId);
     const [upRelation, downRelation] = await Promise.all([
       this.getFileRelation(entryFileId, 'up'),
       this.getFileRelation(entryFileId, 'down'),
@@ -743,7 +743,7 @@ class AnalysisJS {
     entryFileId: number,
     type: 'up' | 'down' = 'down',
   ) {
-    logger.info('获取注释文件关系', this.targetDir, entryFileId, type);
+    logger.info('获取注释文件关系', entryFileId, type);
     const lock = new Set<number>();
     const isUpType = type === 'up';
 
@@ -758,7 +758,7 @@ class AnalysisJS {
       ]);
 
       logger.info(
-        `查询完成，当期文件${fileWithAttr.path}有${relations.length}个关系`,
+        `查询完成，当期文件(${fileId}) ${fileWithAttr.path}有${relations.length}个关系`,
       );
 
       const result: GetCommentRelationResult = {

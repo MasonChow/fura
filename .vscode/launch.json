@@ -55,8 +55,7 @@
         "${workspaceFolder}/src/bin/index.ts",
         "pkg",
         "@babel/parser",
-        "axios",
-        "better-sqlite3"
+        "lodash",
       ]
     },
     {

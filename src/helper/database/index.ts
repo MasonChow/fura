@@ -1,3 +1,7 @@
+/**
+ * @name 基础sqlLite操作方法
+ */
+
 import SQLITE from 'better-sqlite3';
 import knex, { Knex } from 'knex';
 import fs from 'fs';

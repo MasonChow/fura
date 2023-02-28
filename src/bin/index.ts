@@ -94,7 +94,7 @@ cli
   });
 
 cli
-  .command('pkg [...packages]', 'npm包影响范围')
+  .command('pkg <...packages>', 'npm包影响范围')
   .option('-c,-config <configPath>', '指定配置文件地址')
   .action(async (packages, { c }: { c?: string }) => {
     console.info('分析包影响范围', packages);

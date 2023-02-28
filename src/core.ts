@@ -144,7 +144,7 @@ export async function main(config: Config) {
         const fromData = infoMap.get(fromId)!;
         const nextIds = simpleRelationMap.get(fromId)!;
 
-        if (fromData.attr?.name) {
+        if (fromData.attr?.name || fromData.isEntry) {
           const simpleRelation = nextIds.map(getAvailableNextIds).flat();
 
           simpleRelation.forEach((nextId) => {
@@ -178,8 +178,12 @@ export async function main(config: Config) {
       const fileIdSet = new Set<number>();
       [...npmPkgMap.values()].forEach((val) => {
         val.usedFiles.forEach((file) => {
-          fileIdSet.add(file.id);
-          relations.push({ from: val.id, to: file.id, fromIdType: 'npmPkg' });
+          fileIdSet.add(file.file_id);
+          relations.push({
+            from: val.id,
+            to: file.file_id,
+            fromIdType: 'npmPkg',
+          });
         });
       });
       const { infoMap: fileInfoMap, relations: fileRelations } =

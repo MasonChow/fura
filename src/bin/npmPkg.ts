@@ -15,11 +15,16 @@ import {
 } from '../helper/mermaid';
 import diskCache from '../helper/diskCache';
 
-async function schema(
+async function npmPkg(
   target: string,
   npmPkgs: string[],
   options: CommonOptions,
 ) {
+  if (!npmPkgs.length) {
+    console.error('缺失指定npm包');
+    return;
+  }
+
   const spinner = ora('分析项目代码').start();
   const instance = await core({
     cwd: target,
@@ -43,29 +48,23 @@ async function schema(
 
     params.itemMap[to] = {
       name: toData?.attr?.name || toData?.name || 'unknown',
-      type: toData?.isEntry ? 'circle' : undefined,
     };
 
     if (fromIdType === 'npmPkg') {
       const npmPkgData = npmPkgMap.get(from)!;
       const fromId = `npmPkg_${npmPkgData.id}`;
       params.itemMap[fromId] = {
-        name: `${npmPkgData.name}${npmPkgData.version}`,
-        type: 'stadium',
+        name: `${npmPkgData.name}-变更`,
+        type: 'circle',
       };
-      params.links.push([
-        fromId,
-        String(to),
-        { text: fromIdType === 'npmPkg' ? '直接影响' : '' },
-      ]);
+      params.links.push([fromId, String(to), { text: '直接影响' }]);
     } else {
       const fromFileData = fileInfoMap.get(from);
       const fromId = String(from);
       params.itemMap[from] = {
         name: fromFileData?.attr?.name || fromFileData?.name || 'unknown',
-        type: fromFileData?.isEntry ? 'circle' : undefined,
       };
-      params.links.push([fromId, String(to)]);
+      params.links.push([fromId, String(to), { text: '引用' }]);
     }
   });
 
@@ -89,4 +88,4 @@ async function schema(
   console.info('结果mermaid内容:', cachePath);
 }
 
-export default schema;
+export default npmPkg;
