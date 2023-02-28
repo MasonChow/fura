@@ -1,3 +1,7 @@
+/**
+ * @name 基础sqlLite操作方法
+ */
+
 import SQLITE from 'better-sqlite3';
 import knex, { Knex } from 'knex';
 import fs from 'fs';
@@ -6,6 +10,9 @@ import logger from '../logger';
 import { createTables, Table } from './table';
 
 export type DatabaseTable = Table;
+
+export type DatabaseQueryBuilder<TableName extends keyof DatabaseTable> =
+  Knex.Where<DatabaseTable[TableName]>;
 
 /**
  * @description 数据库实例，底层DB使用sqlite3，使用knex+better-sqlite3进行交互

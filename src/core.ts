@@ -3,9 +3,9 @@
  */
 
 import lodash from 'lodash';
-import Analysis from '../analysis';
-import { GetMapValue } from '../typings/utils';
-import logger from '../helper/logger';
+import Analysis from './analysis';
+import { GetMapValue } from './typings/utils';
+import logger from './helper/logger';
 
 export interface Config {
   // 分析入口目录 默认 .
@@ -50,10 +50,20 @@ export async function main(config: Config) {
      * @returns infoMap 对应id的Map数据
      * @returns relations 对应的关系链
      */
-    async getRelationFromFileComment(entryFilePaths: string[]) {
+    async getRelationFileComment(entryFile: {
+      paths?: string[];
+      ids?: number[];
+    }) {
+      let entryFileIds = entryFile.ids || [];
+
+      if (!entryFileIds.length && entryFile.paths) {
+        entryFileIds = entryFile.paths.map((path) =>
+          analysis.getFileIdByPath(path),
+        );
+      }
       const results = await Promise.all(
-        entryFilePaths.map((entryFile) =>
-          analysis.getFlattenFileFullRelation(entryFile),
+        entryFileIds.map((fileId) =>
+          analysis.getFlattenFileFullRelationById(fileId),
         ),
       );
 
@@ -134,7 +144,7 @@ export async function main(config: Config) {
         const fromData = infoMap.get(fromId)!;
         const nextIds = simpleRelationMap.get(fromId)!;
 
-        if (fromData.attr?.name) {
+        if (fromData.attr?.name || fromData.isEntry) {
           const simpleRelation = nextIds.map(getAvailableNextIds).flat();
 
           simpleRelation.forEach((nextId) => {
@@ -151,6 +161,42 @@ export async function main(config: Config) {
       return {
         infoMap,
         relations: simpleRelations,
+      };
+    },
+    /**
+     * 获取NPM与文件的引用关系依赖
+     * @param npmPkgs npm包名
+     * @returns
+     */
+    async getRelationFileCommentByNpmPkgs(npmPkgs: string[]) {
+      const npmPkgMap = await analysis.getNpmPkgInfoMap(npmPkgs);
+      const relations: Array<{
+        from: number;
+        to: number;
+        fromIdType: 'npmPkg' | 'file';
+      }> = [];
+      const fileIdSet = new Set<number>();
+      [...npmPkgMap.values()].forEach((val) => {
+        val.usedFiles.forEach((file) => {
+          fileIdSet.add(file.file_id);
+          relations.push({
+            from: val.id,
+            to: file.file_id,
+            fromIdType: 'npmPkg',
+          });
+        });
+      });
+      const { infoMap: fileInfoMap, relations: fileRelations } =
+        await this.getRelationFileComment({ ids: [...fileIdSet] });
+
+      fileRelations.forEach(({ from, to }) => {
+        relations.push({ from, to, fromIdType: 'file' });
+      });
+
+      return {
+        npmPkgMap,
+        fileInfoMap,
+        relations,
       };
     },
     /** 分析sdk示例 */

@@ -20,13 +20,14 @@ const config: parser.ParserOptions = {
   plugins: ['dynamicImport', 'jsx', 'typescript', 'classProperties'],
 };
 
-// 同步方式
-export function parseContent(content: string) {
+export function parseContent(content: string): ReturnType<typeof parser.parse> {
   return parser.parse(content, config);
 }
 
-// 异步方式
-export function parseAsync(source: TranslatorSource) {
+// 同步方式
+export function parseAsync(
+  source: TranslatorSource,
+): ReturnType<typeof parseContent> {
   try {
     if (source.content !== undefined) {
       return parseContent(source.content);

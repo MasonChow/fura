@@ -44,9 +44,9 @@ async function diffInfluence(
   });
   spinner.text = '解析文件关系';
 
-  const { infoMap, relations } = await instance.getRelationFromFileComment(
-    entry,
-  );
+  const { infoMap, relations } = await instance.getRelationFileComment({
+    paths: entry,
+  });
 
   spinner.text = '构建关系链路';
 

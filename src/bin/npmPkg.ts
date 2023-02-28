@@ -1,12 +1,12 @@
 /**
  * 通过注释生成关联文档内容
  *
- * @name 生成项目文档内容
+ * @name 生成NPM依赖关联内容
  * @group module
  */
 // import lodash from 'lodash';
 import ora from 'ora';
-import { Config, CommonOptions } from './helper/type';
+import { CommonOptions } from './helper/type';
 import core from '../core';
 import {
   // conversionToMedia,
@@ -15,11 +15,16 @@ import {
 } from '../helper/mermaid';
 import diskCache from '../helper/diskCache';
 
-async function schema(
+async function npmPkg(
   target: string,
-  entry: Required<Config>['entry'],
+  npmPkgs: string[],
   options: CommonOptions,
 ) {
+  if (!npmPkgs.length) {
+    console.error('缺失指定npm包');
+    return;
+  }
+
   const spinner = ora('分析项目代码').start();
   const instance = await core({
     cwd: target,
@@ -27,9 +32,8 @@ async function schema(
   });
   spinner.text = '解析文件关系';
 
-  const { infoMap, relations } = await instance.getRelationFileComment({
-    paths: entry,
-  });
+  const { npmPkgMap, fileInfoMap, relations } =
+    await instance.getRelationFileCommentByNpmPkgs(npmPkgs);
 
   spinner.text = '构建关系链路';
 
@@ -39,21 +43,29 @@ async function schema(
   };
 
   relations.forEach((rel) => {
-    const { from, to } = rel;
-    const fromData = infoMap.get(from);
-    const toData = infoMap.get(to);
-
-    params.itemMap[from] = {
-      name: fromData?.attr?.name || toData?.name || 'unknown',
-      type: fromData?.isEntry ? 'circle' : undefined,
-    };
+    const { from, to, fromIdType } = rel;
+    const toData = fileInfoMap.get(to);
 
     params.itemMap[to] = {
       name: toData?.attr?.name || toData?.name || 'unknown',
-      type: toData?.isEntry ? 'circle' : undefined,
     };
 
-    params.links.push([String(from), String(to)]);
+    if (fromIdType === 'npmPkg') {
+      const npmPkgData = npmPkgMap.get(from)!;
+      const fromId = `npmPkg_${npmPkgData.id}`;
+      params.itemMap[fromId] = {
+        name: `${npmPkgData.name}-变更`,
+        type: 'circle',
+      };
+      params.links.push([fromId, String(to), { text: '直接影响' }]);
+    } else {
+      const fromFileData = fileInfoMap.get(from);
+      const fromId = String(from);
+      params.itemMap[from] = {
+        name: fromFileData?.attr?.name || fromFileData?.name || 'unknown',
+      };
+      params.links.push([fromId, String(to), { text: '引用' }]);
+    }
   });
 
   spinner.text = '生成图例';
@@ -66,7 +78,7 @@ async function schema(
   spinner.text = '写入本地缓存';
 
   const cachePath = diskCache.writeFileSync(
-    './comment-relation.mmd',
+    './npm-pkg-relation.mmd',
     String(flowChatsContent),
   );
 
@@ -76,4 +88,4 @@ async function schema(
   console.info('结果mermaid内容:', cachePath);
 }
 
-export default schema;
+export default npmPkg;
