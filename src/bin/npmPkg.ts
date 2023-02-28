@@ -50,7 +50,7 @@ async function schema(
       const npmPkgData = npmPkgMap.get(from)!;
       const fromId = `npmPkg_${npmPkgData.id}`;
       params.itemMap[fromId] = {
-        name: `${npmPkgData.name}版本${npmPkgData.version}`,
+        name: `${npmPkgData.name}${npmPkgData.version}`,
         type: 'stadium',
       };
       params.links.push([
