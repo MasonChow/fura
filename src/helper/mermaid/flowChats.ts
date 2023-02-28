@@ -2,7 +2,6 @@
  * mermaid-flowChats模块
  */
 
-import { replaceSpecialSymbolStr } from '../utils';
 import { GetObjectEntries } from '../../typings/utils';
 
 export const NODE_LINK_MAP = {
@@ -23,7 +22,11 @@ export interface FlowChartsNodeShape {
 
 export type FlowChartNodeLinkType =
   | [string, string]
-  | [string, string, { text: string; type?: NodeLinkMapTypes['keys'] }];
+  | [
+      string,
+      string,
+      { text: string; type?: NodeLinkMapTypes['keys'] } | null | undefined,
+    ];
 
 /** 渲染flowCharts流程图数据类型定义 */
 export interface CreateFlowchartsData {
@@ -59,6 +62,16 @@ export interface CreateFlowchartsOptions {
 }
 
 /**
+ * 移除mermaid渲染不支持的特殊字符
+ */
+export function replaceMermaidUnSupportSymbolStr(str: string) {
+  return str.replace(
+    /[`~@()=|{}';',\\[\]/~！@￥……*（）——|{}【】」「'；：""'。，、？]/g,
+    '',
+  );
+}
+
+/**
  * 构建Flow流程图node节点
  *
  * @param params.key 节点id
@@ -74,7 +87,7 @@ export function createFlowChartsNodeShape(params: {
   type?: FlowChartsNodeShape['type'];
 }) {
   const { key, name, type = 'round-edges' } = params;
-  const nodeName = replaceSpecialSymbolStr(name);
+  const nodeName = replaceMermaidUnSupportSymbolStr(name);
 
   switch (type) {
     case 'round-edges':
@@ -141,7 +154,8 @@ export function createFlowcharts(
   const type = options?.type || 'LR';
 
   const keys = Object.entries(data.itemMap).map(([key, info]) => {
-    return createFlowChartsNodeShape({ key, ...info });
+    const nodeShape = createFlowChartsNodeShape({ key, ...info });
+    return nodeShape;
   });
 
   const notes = data.links.map((link) => {

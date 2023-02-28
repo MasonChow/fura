@@ -97,12 +97,12 @@ class AnalysisJS {
     this.DB = new Database(diskCache.createFilePath(`${project}.db`), true);
   }
 
-  get db() {
+  private get db() {
     return this.DB;
   }
 
   // 把文件基本信息写入数据库
-  public async initBaseDataIntoDB() {
+  private async initBaseDataIntoDB() {
     // 如果有缓存则清除
     if (this.dataCache) {
       this.initDB();
@@ -252,7 +252,7 @@ class AnalysisJS {
     return null;
   }
 
-  public getCacheDataByPath(itemPath: string) {
+  private getCacheDataByPath(itemPath: string) {
     const { dataCache } = this;
 
     if (!dataCache) {
@@ -309,7 +309,27 @@ class AnalysisJS {
   }
 
   /**
-   * @function 自动补全index文件
+   * 根据文件路径获取对应的文件id
+   *
+   * @param filePath 文件相对路径
+   */
+  public getFileIdByPath(filePath: string) {
+    const fileAbsolutePath = path.join(this.targetDir, filePath);
+    // 检查文件是否存在
+    fs.statSync(fileAbsolutePath);
+    // 转成fileId
+    const fileId = this.dataCache?.file[fileAbsolutePath]?.id || 0;
+
+    if (!fileId) {
+      console.warn(
+        `[warn] 文件并未并被解析成功，绝对路径：${filePath}，传入相对路径：${filePath}`,
+      );
+    }
+    return fileId;
+  }
+
+  /**
+   * 自动补全index文件
    * @author Mason
    * @private
    * @param filePath
@@ -341,7 +361,7 @@ class AnalysisJS {
   }
 
   /**
-   * @function 设置文件之间的依赖数据
+   * 设置文件之间的依赖数据
    */
   private async setFileRelations(
     filePath: string,
@@ -391,9 +411,7 @@ class AnalysisJS {
   }
 
   /**
-   * @function 设置文件的描述信息
-   * @author Mason
-   * @private
+   * 设置文件的描述信息
    */
   private async setFileAttrs(
     filePath: string,
@@ -409,7 +427,7 @@ class AnalysisJS {
   }
 
   /**
-   * @function 分析文件
+   * 分析文件
    * @param filePath 分析文件路径
    */
   private async analysisFile(filePath: string) {
@@ -467,7 +485,7 @@ class AnalysisJS {
     });
 
     /**
-     * @function 遍历node节点
+     * 遍历node节点
      */
     function loopTreeNode(dirPath: string): ProjectTreeNode {
       const children = dirChildMap.get(dirPath)!;
@@ -502,7 +520,7 @@ class AnalysisJS {
   }
 
   /**
-   * @function 获取没被应用的依赖
+   * 获取没被应用的依赖
    * @description 暂时支持ts/js文件引用分析已经npm包中dependencies无被引用分析
    */
   public async getUnusedDeps(
@@ -524,7 +542,7 @@ class AnalysisJS {
       // 项目npm包
       npmPkgs,
     ] = await Promise.all([
-      this.getAllFileRefs(),
+      this.getFileRefs(),
       this.getDirFiles(),
       this.getNpmPkgs(),
     ]);
@@ -626,10 +644,20 @@ class AnalysisJS {
 
   /**
    * 获取文件上下游链路数据-平铺格式
-   * @param filePath 目标文件路径
+   * @param entryFilePath 入口文件相对路径
    */
   public async getFlattenFileFullRelation(entryFilePath: string) {
-    const res = await this.getFileFullRelation(entryFilePath);
+    const fileId = this.getFileIdByPath(entryFilePath);
+
+    return this.getFlattenFileFullRelationById(fileId);
+  }
+
+  /**
+   * 获取文件上下游链路数据-平铺格式
+   * @param entryFileId 入口文件的id
+   */
+  public async getFlattenFileFullRelationById(entryFileId: number) {
+    const res = await this.getFileFullRelation(entryFileId);
     const infoMap = new Map<
       number,
       Omit<typeof res, 'prev' | 'next'> & {
@@ -685,16 +713,16 @@ class AnalysisJS {
 
   /**
    * 获取文件上下游链路数据-树状
-   * @param filePath 目标文件路径
+   * @param entryFileId 入口文件的id
    *
    * @returns prev 上游数据
    * @returns next 下游数据
    */
-  public async getFileFullRelation(filePath: string) {
+  private async getFileFullRelation(entryFileId: number) {
     logger.info('获取完整的文件关系连路');
     const [upRelation, downRelation] = await Promise.all([
-      this.getFileRelation(filePath, 'up'),
-      this.getFileRelation(filePath, 'down'),
+      this.getFileRelation(entryFileId, 'up'),
+      this.getFileRelation(entryFileId, 'down'),
     ]);
 
     return {
@@ -706,23 +734,18 @@ class AnalysisJS {
   }
 
   /**
-   * @function 获取文件依赖关系
+   * 获取文件依赖关系
    *
-   * @params type up-上游 down-下游
+   * @param entryFileId 入口文件的id
+   * @param type up-上游 down-下游
    */
-  public async getFileRelation(
-    rootFilePath: string,
+  private async getFileRelation(
+    entryFileId: number,
     type: 'up' | 'down' = 'down',
   ) {
-    logger.info('获取注释关系图', this.targetDir, rootFilePath);
-    const entryFileAbsolutePath = path.join(this.targetDir, rootFilePath);
+    logger.info('获取注释文件关系', this.targetDir, entryFileId, type);
     const lock = new Set<number>();
     const isUpType = type === 'up';
-
-    // 检查文件是否存在
-    fs.statSync(entryFileAbsolutePath);
-
-    const rootFileId = this.dataCache?.file[entryFileAbsolutePath]?.id || 0;
 
     const loop = async (fileId: number) => {
       logger.info('递归执行', fileId);
@@ -731,7 +754,7 @@ class AnalysisJS {
         isUpType
           ? this.getFileUpstream(fileId)
           : this.getFileDownstream(fileId),
-        this.getFileWithAttr({ id: fileId }),
+        this.getFileWithAttr(fileId),
       ]);
 
       logger.info(
@@ -770,20 +793,14 @@ class AnalysisJS {
       return result;
     };
 
-    const res = await loop(rootFileId);
+    const res = await loop(entryFileId);
     return res;
   }
 
   /**
-   * @function 获取文件信息以及相关属性
+   * 获取文件信息以及相关属性
    */
-  public async getFileWithAttr(params: Partial<{ path: string; id: number }>) {
-    let fileId = params.id || 0;
-
-    if (!fileId && params.path) {
-      fileId = this.dataCache?.file[params.path]?.id || 0;
-    }
-
+  private async getFileWithAttr(fileId: number) {
     const [fileRes, attrsRes] = await Promise.all([
       this.getFilesByIds([fileId]),
       this.getFileAttrs([fileId]),
@@ -796,26 +813,26 @@ class AnalysisJS {
   }
 
   /**
-   * @function 从DB获取项目内所有文件夹
+   * 从DB获取项目内所有文件夹
    */
-  public async getAllDir() {
+  private async getAllDir() {
     const res = await this.db.query('dir', ['*']).orderBy('depth', 'asc');
     return res;
   }
 
   /**
-   * @function 从DB获取项目内所有文件
+   * 从DB获取项目内所有文件
    */
-  public async getAllFile() {
+  private async getAllFile() {
     const res = await this.db.query('file', ['*']);
     return res;
   }
 
   /**
-   * @function 批量获取文件的属性
+   * 批量获取文件的属性
    * @description 传入fileIds则按需获取，否则就全量获取
    */
-  public async getFileAttrs(fileIds?: number[]) {
+  private async getFileAttrs(fileIds?: number[]) {
     let dataSource: Array<DatabaseTable['file_attr']> = [];
 
     if (fileIds) {
@@ -830,8 +847,7 @@ class AnalysisJS {
   }
 
   /**
-   * @function 获取项目文件
-   * @description 传入fileIds则按需获取，否则就全量获取
+   * 获取项目文件
    */
   public async getProjectFiles() {
     const [files, fileAttrs] = await Promise.all([
@@ -852,9 +868,9 @@ class AnalysisJS {
   }
 
   /**
-   * @function 获取文件夹与文件内容
+   * 获取文件夹与文件内容
    */
-  public async getDirFiles() {
+  private async getDirFiles() {
     const res = await this.db.useSql<{
       dir_id: DatabaseTable['dir']['id'];
       dir_name: DatabaseTable['dir']['name'];
@@ -886,25 +902,68 @@ class AnalysisJS {
   }
 
   /**
-   * @function 根据ids获取项目内文件
+   * 获取npm包详情依赖
+   * @param npmPkgs
+   * @returns
    */
-  public async getFilesByIds(fileIds: number[] = []) {
+  public async getNpmPkgInfoMap(npmPkgs: string[]) {
+    const res = await this.getNpmPkgs({ names: npmPkgs });
+    const refFiles = await this.getFileRefs({
+      type: 'npm',
+      refIds: res.map((e) => e.id),
+    });
+    const groupByNpmId = lodash.groupBy(refFiles, 'ref_id');
+
+    return res.reduce((pre, cur) => {
+      pre.set(cur.id, { ...cur, usedFiles: groupByNpmId[cur.id] });
+      return pre;
+    }, new Map<number, (typeof res)[0] & { usedFiles: typeof refFiles }>());
+  }
+
+  /**
+   * 根据ids获取项目内文件
+   */
+  private async getFilesByIds(fileIds: number[] = []) {
     const res = await this.db.table('file').whereIn('id', fileIds);
     return res;
   }
 
   /**
-   * @function 获取所有文件依赖关系
+   * 获取所有文件依赖关系
    */
-  public async getAllFileRefs() {
-    const res = await this.db.query('file_reference', ['*']);
+  private async getFileRefs(
+    params?: Partial<{
+      type: DatabaseTable['file_reference']['type'];
+      fileIds: DatabaseTable['file_reference']['file_id'][];
+      refIds: DatabaseTable['file_reference']['ref_id'][];
+    }>,
+  ) {
+    let query = this.db.query('file_reference', ['*']);
+
+    if (params) {
+      const { type, fileIds, refIds } = params;
+
+      if (type) {
+        query = query.where({ type });
+      }
+
+      if (fileIds?.length) {
+        query = query.whereIn('file_id', fileIds);
+      }
+
+      if (refIds?.length) {
+        query = query.whereIn('ref_id', refIds);
+      }
+    }
+
+    const res = await query;
     return res;
   }
 
   /**
-   * @function 获取所有文件下游依赖关系
+   * 获取所有文件下游依赖关系
    */
-  public async getFileDownstream(fileId: number) {
+  private async getFileDownstream(fileId: number) {
     const res = await this.db
       .table('file_reference')
       .where('file_id', fileId)
@@ -913,9 +972,9 @@ class AnalysisJS {
   }
 
   /**
-   * @function 获取所有文件上游依赖关系
+   * 获取所有文件上游依赖关系
    */
-  public async getFileUpstream(fileId: number) {
+  private async getFileUpstream(fileId: number) {
     const res = await this.db
       .table('file_reference')
       .where('ref_id', fileId)
@@ -924,10 +983,16 @@ class AnalysisJS {
   }
 
   /**
-   * @function 获取项目的npm依赖包
+   * 获取项目的npm依赖包
    */
-  public async getNpmPkgs() {
-    const res = await this.db.query('npm_pkg', ['*']);
+  private async getNpmPkgs(params?: { names?: string[] }) {
+    let query = this.db.query('npm_pkg', ['*']);
+
+    if (params?.names?.length) {
+      query = query.whereIn('name', params.names);
+    }
+
+    const res = await query;
     return res;
   }
 }

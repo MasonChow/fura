@@ -13,6 +13,7 @@ import * as git from '../helper/git';
 import unused, { Options as unUsedOptions } from './unused';
 import schema from './schema';
 import diffInfluence from './diffInfluence';
+import npmPkg from './npmPkg';
 
 const cli = cac('fura');
 const cwd = getCwd();
@@ -53,6 +54,7 @@ cli
     process.exit(0);
   });
 
+// 后续调整成git-diff
 cli
   .command('diff-influence [target-branch]', '变更影响范围')
   .option('-c,-config <configPath>', '指定配置文件地址')
@@ -88,6 +90,22 @@ cli
       exclude: config('exclude'),
       include: config('include', true),
     });
+    process.exit(0);
+  });
+
+cli
+  .command('pkg [...packages]', 'npm包影响范围')
+  .option('-c,-config <configPath>', '指定配置文件地址')
+  .action(async (packages, { c }: { c?: string }) => {
+    console.info('分析包影响范围', packages);
+    const config = getConfig(c);
+
+    await npmPkg(cwd, packages, {
+      alias: config('alias'),
+      exclude: config('exclude'),
+      include: config('include', true),
+    });
+
     process.exit(0);
   });
 

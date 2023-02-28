@@ -7,6 +7,9 @@ import { createTables, Table } from './table';
 
 export type DatabaseTable = Table;
 
+export type DatabaseQueryBuilder<TableName extends keyof DatabaseTable> =
+  Knex.Where<DatabaseTable[TableName]>;
+
 /**
  * @description 数据库实例，底层DB使用sqlite3，使用knex+better-sqlite3进行交互
  * @constructor filePath: db文件的路径，不存在即创建，默认':memory'，数据存于内存
