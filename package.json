@@ -1,6 +1,6 @@
 {
   "name": "fura",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "文件使用关系分析(File usage relationship analysis)",
   "repository": {
     "type": "git",
