@@ -1,6 +1,6 @@
 {
   "name": "fura",
-  "version": "1.0.1",
+  "version": "0.0.4",
   "description": "文件使用关系分析(File usage relationship analysis)",
   "repository": {
     "type": "git",
@@ -10,8 +10,8 @@
     "build:tsc": "rm -rf ./dist && tsc",
     "build:swc": "rm -rf ./dist && swc ./src -d ./dist && tsc --emitDeclarationOnly --outDir dist",
     "prerelease": "pnpm build:swc && npm version prerelease && npm publish --tag beta",
-    "release:major": "pnpm build:swc && npm version major && npm publish",
-    "release:patch": "pnpm build:swc && npm version patch && npm publish"
+    "release:release": "pnpm build:swc && npm version minor && npm publish",
+    "release:fix": "pnpm build:swc && npm version patch && npm publish"
   },
   "keywords": [],
   "authors": [
