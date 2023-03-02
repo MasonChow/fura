@@ -41,12 +41,12 @@ cli
   });
 
 cli
-  .command('schema', '基于入口文件生成关系图')
+  .command('schema [...path]', '基于文件生成关系图')
   .option('-c,-config <configPath>', '指定配置文件地址')
-  .action(async ({ c }: { c?: string }) => {
+  .action(async (path: string[] | undefined, { c }: { c?: string }) => {
     const config = getConfig(c);
 
-    await schema(cwd, config('entry', true), {
+    await schema(cwd, path?.length ? path : config('entry', true), {
       alias: config('alias'),
       exclude: config('exclude'),
       include: config('include', true),

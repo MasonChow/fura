@@ -177,7 +177,7 @@ export async function main(config: Config) {
       }> = [];
       const fileIdSet = new Set<number>();
       [...npmPkgMap.values()].forEach((val) => {
-        val.usedFiles.forEach((file) => {
+        (val.usedFiles || []).forEach((file) => {
           fileIdSet.add(file.file_id);
           relations.push({
             from: val.id,
