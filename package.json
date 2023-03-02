@@ -10,8 +10,8 @@
     "build:tsc": "rm -rf ./dist && tsc",
     "build:swc": "rm -rf ./dist && swc ./src -d ./dist && tsc --emitDeclarationOnly --outDir dist",
     "prerelease": "pnpm build:swc && npm version prerelease && npm publish --tag beta",
-    "release:release": "pnpm build:swc && npm version minor && npm publish",
-    "release:fix": "pnpm build:swc && npm version patch && npm publish"
+    "deploy:release": "pnpm build:swc && npm version minor && npm publish",
+    "deploy:fix": "pnpm build:swc && npm version patch && npm publish"
   },
   "keywords": [],
   "authors": [
