@@ -170,6 +170,8 @@ export default () => (
 - 考虑到生成的关系图更精准有效，fura暂时仅对文件头部注释进行特定字段解析使用，解析字段标准参考[typedoc](https://typedoc.org/)
 - 其他代码注释使用标准建议参考[TSDoc](https://tsdoc.org/)、[jsdoc](https://jsdoc.app/)
 
+> 本项目内部分注释由open ai生成
+
 ### 参考
 
 - 在ts中寻找出未使用的导出模块 [github](https://github.com/pzavolinsky/ts-unused-exports)
