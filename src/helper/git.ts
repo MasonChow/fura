@@ -41,27 +41,29 @@ export function getDiffFiles(target: string, local?: string) {
 export function getStatusFiles() {
   const res = command(`git status -s`);
   const statusFiles = res.split('\n').map((e) => e.trim());
-  return statusFiles.map((e) => {
-    const [type, fileName] = e.split(' ');
+  return statusFiles
+    .map((e) => {
+      const [type, fileName] = e.split(' ');
 
-    const result: {
-      fileName: string;
-      type: 'add' | 'diff' | 'del';
-    } = {
-      type: 'add',
-      fileName,
-    };
+      const result: {
+        fileName: string;
+        type: 'add' | 'diff' | 'del';
+      } = {
+        type: 'add',
+        fileName,
+      };
 
-    if (type === 'M') {
-      result.type = 'diff';
-    }
+      if (type === 'M') {
+        result.type = 'diff';
+      }
 
-    if (type === 'D') {
-      result.type = 'del';
-    }
+      if (type === 'D') {
+        result.type = 'del';
+      }
 
-    return result;
-  });
+      return result;
+    })
+    .filter((file) => Boolean(file.fileName));
 }
 
 export default command;
