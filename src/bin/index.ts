@@ -7,6 +7,7 @@
  */
 
 import { cac } from 'cac';
+import Table from 'easy-table';
 
 import { getConfig, getPackageJSON, getCwd } from './helper/utils';
 import * as git from '../helper/git';
@@ -62,30 +63,52 @@ cli
     console.info('基于git diff分析代码变更，当前对比目标分支为:', target);
 
     const config = getConfig(c);
-    const localDiffFiles = git.getDiffFiles();
-    let params: { local: string; remote: string } | undefined;
+    const localDiffFiles = git.getStatusFiles();
 
-    if (target) {
-      if (localDiffFiles) {
-        console.warn(
-          '[warning] 当前还有未提交到远端内容，将会合并本地内容和当前分支远端内容进行配对',
-        );
-      }
-
-      params = {
-        local: git.getBranch(),
-        remote: target,
-      };
+    if (target && localDiffFiles) {
+      console.warn(
+        '[warning] 当前还有未提交到远端内容，将会合并本地内容和当前分支远端内容进行配对',
+      );
     }
 
-    const files = [
+    const modifyFiles = [
       ...new Set([
-        ...git.getDiffFiles(params).split('\n'),
-        ...localDiffFiles.split('\n'),
+        ...(target ? git.getDiffFiles(target).split('\n') : []),
+        ...localDiffFiles
+          .filter((e) => e.type === 'diff')
+          .map((e) => e.fileName),
       ]),
     ];
 
-    await diffInfluence(cwd, files, {
+    const diffTable = new Table();
+
+    // 补充新增/删除的内容到表格
+    localDiffFiles.forEach((files) => {
+      if (files.type === 'diff') {
+        return;
+      }
+
+      diffTable.cell('type', files.type === 'add' ? '新增' : '删除');
+      diffTable.cell('name', files.fileName);
+      diffTable.newRow();
+    });
+
+    // 补充有变更的内容到表格
+    modifyFiles.forEach((name) => {
+      diffTable.cell('type', '变更');
+      diffTable.cell('name', name);
+      diffTable.newRow();
+    });
+
+    if (!diffTable.toString().trim()) {
+      console.info(`未检测出存在变更内容`);
+      return;
+    }
+
+    console.info(`当前项目变更代码文件为: \n`);
+    console.info(diffTable.toString());
+
+    await diffInfluence(cwd, modifyFiles, {
       alias: config('alias'),
       exclude: config('exclude'),
       include: config('include', true),

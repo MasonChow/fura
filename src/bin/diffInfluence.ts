@@ -6,7 +6,7 @@
  */
 // import lodash from 'lodash';
 import ora from 'ora';
-import Table from 'easy-table';
+
 import { Config, CommonOptions } from './helper/type';
 import core from '../core';
 import {
@@ -21,22 +21,6 @@ async function diffInfluence(
   entry: Required<Config>['entry'],
   options: CommonOptions,
 ) {
-  console.info(`当前项目变更代码文件为: \n`);
-  const diffTable = new Table();
-  entry.forEach((name) => {
-    diffTable.cell('name', name);
-    diffTable.newRow();
-  });
-  diffTable.total('name', {
-    printer: (val) => {
-      return `count: ${val}`;
-    },
-    reduce: (acc, val, idx) => {
-      return idx + 1;
-    },
-  });
-  console.info(diffTable.toString());
-
   const spinner = ora('分析项目代码').start();
   const instance = await core({
     cwd: target,
