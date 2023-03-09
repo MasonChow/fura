@@ -80,7 +80,6 @@ cli
       ]),
     ];
 
-    console.info(`当前项目变更代码文件为: \n`);
     const diffTable = new Table();
 
     // 补充新增/删除的内容到表格
@@ -101,6 +100,12 @@ cli
       diffTable.newRow();
     });
 
+    if (!diffTable.toString().trim()) {
+      console.info(`未检测出存在变更内容`);
+      return;
+    }
+
+    console.info(`当前项目变更代码文件为: \n`);
     console.info(diffTable.toString());
 
     await diffInfluence(cwd, modifyFiles, {
