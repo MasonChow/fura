@@ -39,9 +39,19 @@ export function getBranch() {
  */
 export function getDiffFiles(params?: { local: string; remote: string }) {
   const res = command(
-    `git diff --name-only ${params ? `${params.remote} ${params.local}` : ''}`,
+    `git diff --name-status ${
+      params ? `${params.remote} ${params.local}` : ''
+    }`,
   );
   return res;
+}
+
+export function checkout(branch: string, withPull?: boolean) {
+  command(`git checkout ${branch}`);
+
+  if (withPull) {
+    command(`git pull`);
+  }
 }
 
 export function checkHasUnCommit() {

@@ -7,13 +7,13 @@
  */
 
 import { cac } from 'cac';
-import Table from 'easy-table';
+// import Table from 'easy-table';
 
 import { getConfig, getPackageJSON, getCwd } from './helper/utils';
 import * as git from '../helper/git';
 import unused, { Options as unUsedOptions } from './unused';
 import schema from './schema';
-import diffInfluence from './diffInfluence';
+// import diffInfluence from './diffInfluence';
 import npmPkg from './npmPkg';
 
 const cli = cac('fura');
@@ -57,7 +57,7 @@ cli
 
 // 后续调整成git-diff
 cli
-  .command('diff-influence <origin-branch> <target-branch>', '变更影响范围')
+  .command('diff-influence <origin-branch> [target-branch]', '变更影响范围')
   .option('-c,-config <configPath>', '指定配置文件地址')
   .action(
     async (
@@ -66,13 +66,14 @@ cli
       { c }: { c?: string } = {},
     ) => {
       git.checkHasUnCommit();
+      const localBranch = git.getBranch();
 
       console.info(
         `基于git diff分析代码变更，当前对比目标分支为: ${targetBranch} -> ${originBranch}`,
       );
 
-      const config = getConfig(c);
-      const localDiffFiles = git.getStatusFiles();
+      // const config = getConfig(c);
+      git.checkout(originBranch, true);
 
       // if (target && localDiffFiles) {
       //   console.warn(
@@ -122,6 +123,7 @@ cli
       //   exclude: config('exclude'),
       //   include: config('include', true),
       // });
+      git.checkout(localBranch);
       process.exit(0);
     },
   );
