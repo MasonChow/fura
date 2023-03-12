@@ -7,13 +7,13 @@
  */
 
 import { cac } from 'cac';
-// import Table from 'easy-table';
+import Table from 'easy-table';
 
 import { getConfig, getPackageJSON, getCwd } from './helper/utils';
 import * as git from '../helper/git';
 import unused, { Options as unUsedOptions } from './unused';
 import schema from './schema';
-// import diffInfluence from './diffInfluence';
+import diffInfluence from './diffInfluence';
 import npmPkg from './npmPkg';
 
 const cli = cac('fura');
@@ -57,83 +57,43 @@ cli
 
 // 后续调整成git-diff
 cli
-  .command('diff-influence <origin-branch> [target-branch]', '变更影响范围')
+  .command('diff-influence <origin-branch>', '变更影响范围')
   .option('-c,-config <configPath>', '指定配置文件地址')
-  .action(
-    async (
-      originBranch: string,
-      targetBranch: string = git.getBranch(),
-      { c }: { c?: string } = {},
-    ) => {
-      git.checkHasUnCommit();
-      const localBranch = git.getBranch();
+  .action(async (originBranch: string, { c }: { c?: string }) => {
+    git.checkHasUnStaged();
 
-      console.info(
-        `基于git diff分析代码变更，当前对比目标分支为: ${targetBranch} -> ${originBranch}`,
-      );
+    console.info(
+      `基于git diff分析代码变更，当前对比目标分支为: ${git.getBranch()} -> ${originBranch}`,
+    );
 
-      // const config = getConfig(c);
-      git.checkout(originBranch, true);
+    const config = getConfig(c);
 
-      // if (target && localDiffFiles) {
-      //   console.warn(
-      //     '[warning] 当前还有未提交到远端内容，将会合并本地内容和当前分支远端内容进行配对',
-      //   );
-      // }
+    const gitDiffs = git.getDiffFiles(originBranch);
+    const diffTable = new Table();
 
-      const res = git.getDiffFiles({
-        local: originBranch,
-        target: targetBranch,
-      });
+    gitDiffs.forEach((files) => {
+      diffTable.cell('type', files.type);
+      diffTable.cell('name', files.file);
+      diffTable.newRow();
+    });
 
-      console.log(res);
+    console.info(`当前项目变更代码文件为: \n`);
+    console.info(diffTable.toString());
 
-      // const modifyFiles = [
-      //   ...new Set([
-      //     ...(target ? git.getDiffFiles(target).split('\n') : []),
-      //     ...localDiffFiles
-      //       .filter((e) => e.type === 'modify')
-      //       .map((e) => e.result),
-      //   ]),
-      // ];
+    const modifyFiles = [
+      ...new Set([
+        ...gitDiffs.filter((e) => e.type !== 'del').map((e) => e.file),
+      ]),
+    ];
 
-      // const diffTable = new Table();
+    await diffInfluence(cwd, modifyFiles, {
+      alias: config('alias'),
+      exclude: config('exclude'),
+      include: config('include', true),
+    });
 
-      // // 补充新增/删除的内容到表格
-      // localDiffFiles.forEach((files) => {
-      //   if (files.type === 'modify') {
-      //     return;
-      //   }
-
-      //   diffTable.cell('type', files.type === 'add' ? '新增' : '删除');
-      //   diffTable.cell('name', files.result);
-      //   diffTable.newRow();
-      // });
-
-      // // 补充有变更的内容到表格
-      // modifyFiles.forEach((name) => {
-      //   diffTable.cell('type', '变更');
-      //   diffTable.cell('name', name);
-      //   diffTable.newRow();
-      // });
-
-      // if (!diffTable.toString().trim()) {
-      //   console.info(`未检测出存在变更内容`);
-      //   return;
-      // }
-
-      // console.info(`当前项目变更代码文件为: \n`);
-      // console.info(diffTable.toString());
-
-      // await diffInfluence(cwd, modifyFiles, {
-      //   alias: config('alias'),
-      //   exclude: config('exclude'),
-      //   include: config('include', true),
-      // });
-      git.checkout(localBranch);
-      process.exit(0);
-    },
-  );
+    process.exit(0);
+  });
 
 cli
   .command('pkg <...packages>', 'npm包影响范围')

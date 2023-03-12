@@ -34,16 +34,51 @@ export function getBranch() {
   return command('git rev-parse --abbrev-ref HEAD');
 }
 
+export function checkHasUnCommit() {
+  const stdout = command(`git status -s`).trim();
+
+  if (stdout) {
+    throw new Error(`存在未提交文件，请先使用git commit提交\n\n${stdout}`);
+  }
+}
+
+function getTypeFromStdout(stdout: string) {
+  const originType = stdout.substring(0, 1);
+  const typeMap = new Map<string, EnumGitDiffType>([
+    ['M', EnumGitDiffType.M],
+    ['D', EnumGitDiffType.D],
+    ['A', EnumGitDiffType.A],
+    ['R', EnumGitDiffType.R],
+  ]);
+  const type: EnumGitDiffType | 'unknown' = typeMap.get(originType)
+    ? typeMap.get(originType)!
+    : 'unknown';
+  return type;
+}
+
 /**
  * 获取当前项目变更内容
  */
-export function getDiffFiles(params?: { local: string; target: string }) {
+export function getDiffFiles(originBranch: string, fromBranch = '') {
   const res = command(
-    `git diff --name-status ${
-      params ? `${params.target} ${params.local}` : ''
-    }`,
+    `git diff --name-status origin/${originBranch} ${fromBranch}`,
   );
-  return res;
+  const statusFiles = res.split('\n');
+
+  return (
+    statusFiles
+      .filter(Boolean)
+      //  获取文件的变更类型
+      .map((stdout) => {
+        const type = getTypeFromStdout(stdout);
+        const [file] = stdout.split(/\s/).reverse();
+
+        return {
+          type,
+          file,
+        };
+      })
+  );
 }
 
 export function checkout(branch: string, withPull?: boolean) {
@@ -54,19 +89,11 @@ export function checkout(branch: string, withPull?: boolean) {
   }
 }
 
-export function checkHasUnCommit() {
-  const stdout = command(`git status -s`).trim();
-
-  if (stdout) {
-    throw new Error(`存在未提交文件，请先使用git commit提交\n\n${stdout}`);
-  }
-}
-
 /**
  * 检查是否依旧存在未暂存的文件
  * @description 如果存在未暂存的文件会抛出错误
  */
-function checkHasUnStaged() {
+export function checkHasUnStaged() {
   const stdout = command(`git status -s`);
   const files = stdout.split('\n');
 
