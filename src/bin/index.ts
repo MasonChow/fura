@@ -57,62 +57,41 @@ cli
 
 // 后续调整成git-diff
 cli
-  .command('diff-influence [target-branch]', '变更影响范围')
+  .command('diff-influence <origin-branch>', '变更影响范围')
   .option('-c,-config <configPath>', '指定配置文件地址')
-  .action(async (target, { c }: { c?: string }) => {
-    console.info('基于git diff分析代码变更，当前对比目标分支为:', target);
+  .action(async (originBranch: string, { c }: { c?: string }) => {
+    git.checkHasUnStaged();
+
+    console.info(
+      `基于git diff分析代码变更，当前对比目标分支为: ${git.getBranch()} -> ${originBranch}`,
+    );
 
     const config = getConfig(c);
-    const localDiffFiles = git.getStatusFiles();
 
-    if (target && localDiffFiles) {
-      console.warn(
-        '[warning] 当前还有未提交到远端内容，将会合并本地内容和当前分支远端内容进行配对',
-      );
-    }
-
-    const modifyFiles = [
-      ...new Set([
-        ...(target ? git.getDiffFiles(target).split('\n') : []),
-        ...localDiffFiles
-          .filter((e) => e.type === 'diff')
-          .map((e) => e.fileName),
-      ]),
-    ];
-
+    const gitDiffs = git.getDiffFiles(originBranch);
     const diffTable = new Table();
 
-    // 补充新增/删除的内容到表格
-    localDiffFiles.forEach((files) => {
-      if (files.type === 'diff') {
-        return;
-      }
-
-      diffTable.cell('type', files.type === 'add' ? '新增' : '删除');
-      diffTable.cell('name', files.fileName);
+    gitDiffs.forEach((files) => {
+      diffTable.cell('type', files.type);
+      diffTable.cell('name', files.file);
       diffTable.newRow();
     });
-
-    // 补充有变更的内容到表格
-    modifyFiles.forEach((name) => {
-      diffTable.cell('type', '变更');
-      diffTable.cell('name', name);
-      diffTable.newRow();
-    });
-
-    if (!diffTable.toString().trim()) {
-      console.info(`未检测出存在变更内容`);
-      return;
-    }
 
     console.info(`当前项目变更代码文件为: \n`);
     console.info(diffTable.toString());
+
+    const modifyFiles = [
+      ...new Set([
+        ...gitDiffs.filter((e) => e.type !== 'del').map((e) => e.file),
+      ]),
+    ];
 
     await diffInfluence(cwd, modifyFiles, {
       alias: config('alias'),
       exclude: config('exclude'),
       include: config('include', true),
     });
+
     process.exit(0);
   });
 
