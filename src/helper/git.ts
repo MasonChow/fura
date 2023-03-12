@@ -37,10 +37,10 @@ export function getBranch() {
 /**
  * 获取当前项目变更内容
  */
-export function getDiffFiles(params?: { local: string; remote: string }) {
+export function getDiffFiles(params?: { local: string; target: string }) {
   const res = command(
     `git diff --name-status ${
-      params ? `${params.remote} ${params.local}` : ''
+      params ? `${params.target} ${params.local}` : ''
     }`,
   );
   return res;

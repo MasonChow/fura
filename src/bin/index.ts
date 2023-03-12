@@ -81,6 +81,13 @@ cli
       //   );
       // }
 
+      const res = git.getDiffFiles({
+        local: originBranch,
+        target: targetBranch,
+      });
+
+      console.log(res);
+
       // const modifyFiles = [
       //   ...new Set([
       //     ...(target ? git.getDiffFiles(target).split('\n') : []),
