@@ -1,3 +1,5 @@
+mod project;
+
 fn main() {
-    println!("Hello, world!");
+  project::reader::read(".".to_string());
 }
