@@ -13,7 +13,7 @@ fn main() {
   // 创建一个“Dir”结构的新实例，并将其赋值给“dir”变量。
   let dir = project::reader::Dir::new(
     "/Users/zhoushunming/Documents/sc/shopline-sc-live-view",
-    Some(vec!["node_modules"]),
+    Some(vec!["node_modules", ".git"]),
   );
   let files = dir.files;
 
