@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS file (
   /** 文件父级目录路径 */
   parent_path TEXT NOT NULL,
   /** 文件类型 */
-  type TEXT NOT NULL,
+  ext TEXT NOT NULL,
   /** 文件大小，单位为字节 */
   size INTEGER DEFAULT 0
 );
@@ -23,9 +23,7 @@ CREATE TABLE IF NOT EXISTS dir (
   /** 文件夹路径 */
   path TEXT NOT NULL,
   /** 文件夹父级目录路径 */
-  parent_path TEXT NOT NULL,
-  /** 文件夹深度 */
-  depth INTEGER NOT NULL
+  parent_path TEXT NOT NULL
 );
 
 /** 创建文件夹表 */
