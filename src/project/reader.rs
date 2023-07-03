@@ -1,3 +1,4 @@
+use serde_json;
 use std::fs;
 use std::path::Path;
 
@@ -134,4 +135,32 @@ impl Project {
       project_root_path: project_root_path.to_string(),
     };
   }
+}
+
+/// 函数“read_file_content”读取文件的内容并将其作为字符串返回。
+///
+/// Arguments:
+///
+/// * `path`: `path` 参数是一个字符串，表示要读取其内容的文件的文件路径。
+///
+/// Returns:
+///
+/// 一个“String”，表示给定“path”处的文件内容。
+pub fn read_file_content(path: &str) -> String {
+  return fs::read_to_string(&path).unwrap();
+}
+
+/// 判断并读取 json 文件内容，返回 json 格式
+/// 如果文件不存在，则抛出异常
+pub fn read_json_file(path: &str) -> serde_json::Value {
+  let file_content = read_file_content(path);
+  let json: serde_json::Value = serde_json::from_str(&file_content).unwrap();
+  return json;
+}
+
+/// 读取项目内的 package.json 文件，并返回 json 格式
+/// 如果文件不存在，则抛出异常
+pub fn read_package_json(root_path: &str) -> serde_json::Value {
+  let path = format!("{}/package.json", root_path);
+  return read_json_file(&path);
 }

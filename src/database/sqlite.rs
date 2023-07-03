@@ -1,9 +1,22 @@
 /// 此代码定义了一个名为“sqlite”的模块，该模块提供了一个函数“execute_batch”，该函数将 SQL
 /// 查询作为字符串并使用“rusqlite”库执行它。该函数首先使用“debug_assertions”标志检查代码是否正在调试模式下编译。如果是，它将打开位于“./debug”目录中名为“.fura.db”的
 /// SQLite 数据库文件。如果没有，它将打开一个内存数据库。然后该函数在数据库连接上执行 SQL 查询并返回结果。
-use crate::project::reader::{Dir, File};
 pub use rusqlite::{Connection, Error, OpenFlags, Result};
 use std::fs::remove_file;
+
+pub struct Dir {
+  pub name: String,
+  pub path: String,
+  pub parent_path: String,
+}
+
+pub struct File {
+  pub name: String,
+  pub path: String,
+  pub parent_path: String,
+  pub size: u64,
+  pub ext: String,
+}
 
 pub fn init() -> Result<()> {
   let init_table_sql = include_str!("./sql/init_table.sql");
@@ -23,7 +36,7 @@ pub fn get_db() -> Result<Connection> {
   return Ok(conn);
 }
 
-pub async fn insert_file(file: &File) {
+pub async fn insert_file(file: File) {
   let conn = get_db().unwrap();
 
   let result = conn.execute(
@@ -43,7 +56,7 @@ pub async fn insert_file(file: &File) {
   };
 }
 
-pub async fn insert_dir(dir: &Dir) {
+pub async fn insert_dir(dir: Dir) {
   let conn = get_db().unwrap();
 
   let result = conn.execute(
