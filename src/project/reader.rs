@@ -1,4 +1,6 @@
+use serde::{Deserialize, Serialize};
 use serde_json;
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
@@ -150,17 +152,20 @@ pub fn read_file_content(path: &str) -> String {
   return fs::read_to_string(&path).unwrap();
 }
 
-/// 判断并读取 json 文件内容，返回 json 格式
-/// 如果文件不存在，则抛出异常
-pub fn read_json_file(path: &str) -> serde_json::Value {
-  let file_content = read_file_content(path);
-  let json: serde_json::Value = serde_json::from_str(&file_content).unwrap();
-  return json;
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PackageJson {
+  pub name: String,
+  pub version: String,
+  pub dependencies: HashMap<String, String>,
+  #[serde(rename = "devDependencies")]
+  pub dev_dependencies: HashMap<String, String>,
 }
 
 /// 读取项目内的 package.json 文件，并返回 json 格式
 /// 如果文件不存在，则抛出异常
-pub fn read_package_json(root_path: &str) -> serde_json::Value {
+pub fn read_package_json(root_path: &str) -> Option<PackageJson> {
   let path = format!("{}/package.json", root_path);
-  return read_json_file(&path);
+  let file_content = read_file_content(&path);
+  let json: PackageJson = serde_json::from_str(&file_content).unwrap();
+  return Some(json);
 }
