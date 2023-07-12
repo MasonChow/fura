@@ -90,49 +90,9 @@ pub async fn insert_npm_pkg(npm_pkg: NpmPkg) {
   };
 }
 
-struct TableFile {
-  id: i32,
-  name: String,
-  path: String,
-  size: u32,
-}
-
-pub async fn query_all_js_files() -> Option<Vec<TableFile>> {
-  let conn = get_db().unwrap();
-  let mut result: Vec<TableFile> = vec![];
-
-  let mut stmt = conn
-    .prepare(
-      r#"
-      SELECT
-        id,
-        name,
-        path,
-        size
-      FROM
-        "file"
-      WHERE
-        ext in("js", "jsx", "ts", "tsx", "cjs", "mjs");
-    "#,
-    )
-    .unwrap();
-
-  let rows = stmt
-    .query_map([], |row| {
-      Ok(TableFile {
-        id: row.get(0)?,
-        name: row.get(1)?,
-        path: row.get(2)?,
-        size: row.get(3)?,
-      })
-    })
-    .unwrap();
-
-  for row in rows {
-    if let Ok(row) = row {
-      result.push(row);
-    };
-  }
-
-  return Some(result);
+pub struct TableFile {
+  pub id: i32,
+  pub name: String,
+  pub path: String,
+  pub size: u32,
 }

@@ -32,11 +32,17 @@ fn query_js_files() -> Result<HashMap<String, u64>, String> {
   return Ok(js_file_map);
 }
 
-pub fn analysis() -> Result<(), String> {
-  let js_file_map = query_js_files()?;
-  let keys = &js_file_map.keys();
+fn read_file(path: &str) -> Result<String, String> {
+  let content = std::fs::read_to_string(path).expect("读取文件失败");
 
-  println!("{:?}", js_file_map);
+  return Ok(content);
+}
 
-  Ok(())
+pub fn run() {
+  let js_file_map = query_js_files().unwrap();
+  let mut paths: Vec<String> = vec![];
+
+  for (path, _id) in js_file_map {
+    paths.push(path);
+  }
 }

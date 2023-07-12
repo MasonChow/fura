@@ -6,4 +6,6 @@ fn main() {
     "/Users/zhoushunming/Documents/sc/shopline-sc-live-view",
     Some(vec!["node_modules", ".git"]),
   );
+
+  project::analyze::javascript::run();
 }
