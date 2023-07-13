@@ -1,19 +1,16 @@
-use deno_ast::parse_module;
-use deno_ast::swc::parser::JscTarget;
-use deno_ast::swc_common::SourceMap;
+use deno_ast::{parse_module, MediaType, ParseParams, SourceTextInfo};
 
-pub fn parse(source: &str) -> Result<deno_ast::Module, deno_ast::Diagnostic> {
-  let source_map = SourceMap::default();
-  parse_module(
-    source_map.clone(),
-    None,
-    &source,
-    Some(JscTarget::Es2020),
-    true,
-    false,
-  )
-  .map_err(|err| {
-    let diagnostic = deno_ast::Diagnostic::from_swc_error(&source_map, err);
-    diagnostic
-  })
+pub fn parse(content: &str) -> Result<(), String> {
+  let params = ParseParams {
+    specifier: "./index.js".to_string(),
+    text_info: SourceTextInfo::from_string(content.to_string()),
+    media_type: MediaType::Tsx,
+    capture_tokens: true,
+    scope_analysis: true,
+    maybe_syntax: None,
+  };
+  // 创建 Parser
+  let parser_module = parse_module(params);
+  println!("{:#?}", parser_module);
+  Ok(())
 }

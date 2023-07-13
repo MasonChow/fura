@@ -1,4 +1,6 @@
 use crate::database::sqlite;
+use crate::project::ast_parser;
+use crate::project::reader;
 use std::collections::HashMap;
 
 fn query_js_files() -> Result<HashMap<String, u64>, String> {
@@ -20,29 +22,30 @@ fn query_js_files() -> Result<HashMap<String, u64>, String> {
     )
     .expect("查询失败");
 
-  let _ = stmt.query_map([], |row| {
-    let id: u64 = row.get(0).unwrap();
-    let path: String = row.get(1).unwrap();
+  let result = stmt.query_map([], |row| Ok((row.get(0).unwrap(), row.get(1).unwrap())));
 
+  for item in result.unwrap() {
+    let (id, path) = item.unwrap();
     js_file_map.insert(path, id);
+  }
 
-    Ok(())
-  });
-
-  return Ok(js_file_map);
+  Ok(js_file_map)
 }
 
-fn read_file(path: &str) -> Result<String, String> {
-  let content = std::fs::read_to_string(path).expect("读取文件失败");
+fn analyze_deps(path: &str) -> Result<(), String> {
+  let content = reader::read_file(path).unwrap();
+  let _ast = ast_parser::javascript::parse(&content).unwrap();
 
-  return Ok(content);
+  return Ok(());
 }
 
 pub fn run() {
   let js_file_map = query_js_files().unwrap();
-  let mut paths: Vec<String> = vec![];
-
-  for (path, _id) in js_file_map {
-    paths.push(path);
+  // let paths: Vec<String> = vec![];
+  // print!("{:#?}", js_file_map);
+  for (path, _) in js_file_map {
+    // paths.push(path);
+    analyze_deps(&path).unwrap();
+    break;
   }
 }

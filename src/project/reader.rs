@@ -169,3 +169,18 @@ pub fn read_package_json(root_path: &str) -> Option<PackageJson> {
   let json: PackageJson = serde_json::from_str(&file_content).unwrap();
   return Some(json);
 }
+
+/// “read_file”函数读取文件的内容并将其作为“Result”返回，其中内容为“String”，或者错误消息为“String”。
+///
+/// Arguments:
+///
+/// * `path`: `path` 参数是一个字符串，表示要读取的文件的文件路径。
+///
+/// Returns:
+///
+/// 函数“read_file”返回“Result”类型，成功情况包含“String”，错误情况包含“String”。
+pub fn read_file(path: &str) -> Result<String, String> {
+  let content = std::fs::read_to_string(path).expect("读取文件失败");
+
+  return Ok(content);
+}

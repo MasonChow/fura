@@ -2,6 +2,7 @@ use futures::executor::block_on;
 mod init_base;
 
 pub mod analyze;
+pub mod ast_parser;
 pub mod reader;
 
 /// 初始化项目数据。
@@ -20,4 +21,6 @@ pub fn init_project_data(root_path: &str, exclude_paths: Option<Vec<&str>>) {
   if let Some(package_json) = reader::read_package_json(root_path) {
     block_on(init_base::insert_package_json_data(&package_json));
   }
+
+  analyze::javascript::run();
 }
