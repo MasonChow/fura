@@ -34,18 +34,15 @@ fn query_js_files() -> Result<HashMap<String, u64>, String> {
 
 fn analyze_deps(path: &str) -> Result<(), String> {
   let content = reader::read_file(path).unwrap();
-  let _ast = ast_parser::javascript::parse(&content).unwrap();
+  let ast: ast_parser::javascript::ParsedSource =
+    ast_parser::javascript::parse(&content).expect("解析失败");
 
   return Ok(());
 }
 
 pub fn run() {
   let js_file_map = query_js_files().unwrap();
-  // let paths: Vec<String> = vec![];
-  // print!("{:#?}", js_file_map);
   for (path, _) in js_file_map {
-    // paths.push(path);
     analyze_deps(&path).unwrap();
-    break;
   }
 }
