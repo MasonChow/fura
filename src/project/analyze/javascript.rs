@@ -46,19 +46,18 @@ fn analyze_ast_imports(ast: &javascript_parser::ParsedSource) -> Result<(), Stri
     if let ast::ModuleItem::ModuleDecl(decl) = module {
       println!("import => {:?}", decl);
       if let ast::ModuleDecl::Import(import_decl) = decl {
+        deps.source = import_decl.src.value.to_string();
+
         for specifiers in import_decl.specifiers.iter() {
           match specifiers {
             ast::ImportSpecifier::Named(named_specifier) => {
-              println!(
-                "import => \n {:?} \n {:?}",
-                named_specifier, named_specifier
-              );
+              deps.module.push(named_specifier.local.sym.to_string());
             }
-            // ast::ImportSpecifier::Default(default_specifier) => {
-            //   println!("import => {:?}", default_specifier);
-            // }
+            ast::ImportSpecifier::Default(default_specifier) => {
+              deps.module.push(default_specifier.local.sym.to_string());
+            }
             ast::ImportSpecifier::Namespace(namespace_specifier) => {
-              println!("import => {:?}", namespace_specifier);
+              deps.module.push(namespace_specifier.local.sym.to_string());
             }
             _ => {}
           }
@@ -66,6 +65,8 @@ fn analyze_ast_imports(ast: &javascript_parser::ParsedSource) -> Result<(), Stri
       }
     }
   }
+
+  println!("import => \n {:?}", &deps);
   Ok(())
 }
 
@@ -76,6 +77,7 @@ pub fn analyze_all() {
   }
 }
 
+#[derive(Debug)]
 pub struct JavascriptDependency {
   pub code: String,
   pub module: Vec<String>,
