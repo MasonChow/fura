@@ -2,6 +2,8 @@ pub use deno_ast::{
   parse_module, Diagnostic, MediaType, ParseParams, ParsedSource, SourceTextInfo,
 };
 
+pub use deno_ast::swc::ast;
+
 /// 函数“parse”将字符串作为输入并返回已解析的源或诊断错误。
 ///
 /// Arguments:
