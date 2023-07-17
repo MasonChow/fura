@@ -3,6 +3,7 @@ use crate::project::ast_parser::javascript as javascript_parser;
 use crate::project::ast_parser::javascript::ast;
 use crate::project::reader;
 use std::collections::HashMap;
+use std::vec;
 
 /// 查询项目内所有 js 文件
 fn query_js_files() -> Result<HashMap<String, u64>, String> {
@@ -37,26 +38,26 @@ fn query_js_files() -> Result<HashMap<String, u64>, String> {
 /// 分析 AST 中的 import 语句
 fn analyze_ast_imports(
   ast: &javascript_parser::ParsedSource,
-) -> Result<JavascriptDependence, String> {
-  let mut deps = JavascriptDependence {
-    modules: vec![],
-    source: String::from(""),
-  };
+) -> Result<HashMap<String, Vec<String>>, String> {
+  let mut imports_map: HashMap<String, Vec<String>> = HashMap::new();
 
   for module in ast.module().body.iter() {
+    // 分析 JavaScript 文件的 AST（抽象语法树）中的导入语句。
     if let ast::ModuleItem::ModuleDecl(decl) = module {
       if let ast::ModuleDecl::Import(import_decl) = decl {
-        deps.source = import_decl.src.value.to_string();
+        let source = import_decl.src.value.to_string();
+        let modules = imports_map.entry(source).or_insert(vec![]);
 
         for specifiers in import_decl.specifiers.iter() {
+          // 处理 JavaScript 文件的 AST（抽象语法树）中不同类型的导入说明符。
           match specifiers {
             ast::ImportSpecifier::Named(named_specifier) => match &named_specifier.imported {
               None => {
-                deps.modules.push(named_specifier.local.sym.to_string());
+                modules.push(named_specifier.local.sym.to_string());
               }
               Some(imported) => match imported {
                 ast::ModuleExportName::Ident(ident) => {
-                  deps.modules.push(ident.sym.to_string());
+                  modules.push(ident.sym.to_string());
                 }
                 others => {
                   println!("存在未处理匹配的内容 {:?}", others);
@@ -64,10 +65,10 @@ fn analyze_ast_imports(
               },
             },
             ast::ImportSpecifier::Default(default_specifier) => {
-              deps.modules.push(default_specifier.local.sym.to_string());
+              modules.push(default_specifier.local.sym.to_string());
             }
             ast::ImportSpecifier::Namespace(namespace_specifier) => {
-              deps.modules.push(namespace_specifier.local.sym.to_string());
+              modules.push(namespace_specifier.local.sym.to_string());
             }
             o => {
               println!("存在未处理匹配的内容, {:?}", o);
@@ -78,7 +79,7 @@ fn analyze_ast_imports(
     }
   }
 
-  Ok(deps)
+  Ok(imports_map)
 }
 
 pub fn analyze_all() {
@@ -86,12 +87,6 @@ pub fn analyze_all() {
   for (path, _) in js_file_map {
     let _result = JavascriptFile::new(&path);
   }
-}
-
-#[derive(Debug)]
-pub struct JavascriptDependence {
-  pub modules: Vec<String>,
-  pub source: String,
 }
 
 /// `JavascriptFile` 结构代表一个 JavaScript 文件，包含其路径、代码、抽象语法树 (AST) 和导入等信息。
@@ -104,25 +99,24 @@ pub struct JavascriptDependence {
 /// 是代码的结构化表示，可以更轻松地分析和操作。
 /// * `imports`: “imports”属性是一个“HashMap”，用于存储 JavaScript
 /// 文件的依赖项。每个依赖项都由“JavascriptDependency”结构表示，“HashMap”中的键是依赖项的名称。
+#[derive(Debug)]
 pub struct JavascriptFile {
-  pub path: String,
+  pub file_path: String,
   pub code: String,
-  pub ast: javascript_parser::ParsedSource,
-  pub imports: HashMap<String, JavascriptDependence>,
+  /// 文件导入的模块，key 为模块路径，value 为导入的模块
+  pub imports: HashMap<String, Vec<String>>,
 }
 
 impl JavascriptFile {
-  pub fn new(path: &str) -> JavascriptFile {
-    let code = reader::read_file(path).unwrap();
+  pub fn new(file_path: &str) -> JavascriptFile {
+    let code = reader::read_file(file_path).unwrap();
     let ast: javascript_parser::ParsedSource =
       javascript_parser::parse(&code).expect("解析 ast 失败");
-    let result = analyze_ast_imports(&ast);
-    let imports: HashMap<String, JavascriptDependence> = HashMap::new();
+    let imports = analyze_ast_imports(&ast).unwrap();
 
     JavascriptFile {
-      path: path.to_string(),
+      file_path: file_path.to_string(),
       code,
-      ast,
       imports,
     }
   }
@@ -136,6 +130,8 @@ mod test {
   #[test]
   fn analyze_js_file_imports() {
     let test_code_file_path = Path::new("test/data/js/imports.ts");
-    let _test_result = JavascriptFile::new(test_code_file_path.to_str().unwrap());
+    let test_result = JavascriptFile::new(test_code_file_path.to_str().unwrap());
+
+    println!("存在未处理匹配的内容 {:?}", test_result);
   }
 }
