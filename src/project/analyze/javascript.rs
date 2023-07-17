@@ -1,5 +1,3 @@
-use deno_ast::swc::common::source_map;
-
 use crate::database::sqlite;
 use crate::project::ast_parser::javascript as javascript_parser;
 use crate::project::ast_parser::javascript::ast;
@@ -37,31 +35,18 @@ fn query_js_files() -> Result<HashMap<String, u64>, String> {
 }
 
 /// 分析 AST 中的 import 语句
-fn analyze_ast_imports(ast: &javascript_parser::ParsedSource) -> Result<(), String> {
+fn analyze_ast_imports(
+  ast: &javascript_parser::ParsedSource,
+) -> Result<JavascriptDependence, String> {
   let mut deps = JavascriptDependence {
-    code: String::from(""),
     modules: vec![],
     source: String::from(""),
   };
 
   for module in ast.module().body.iter() {
-    let source_code = &ast.text_info().text().to_string().clone();
-
     if let ast::ModuleItem::ModuleDecl(decl) = module {
       if let ast::ModuleDecl::Import(import_decl) = decl {
-        let position_json = serde_json::to_string(&import_decl.src.span).unwrap();
-        let source_start_idx: usize = position_json.find("start").unwrap();
-        let source_end_idx: usize = position_json.find("end").unwrap();
-        let source_code = &source_code.clone()[source_start_idx..source_end_idx].to_string();
-
-        // deps.code = source_code.to_string();
-
-        println!("code \n {:?} \n {:?} \n", &source_code, position_json);
-
-        // println!(
-        //   "source {:?} {:?} {:?} \n {:?}",
-        //   source_start_idx, source_end_idx, position_json, import_decl
-        // );
+        deps.source = import_decl.src.value.to_string();
 
         for specifiers in import_decl.specifiers.iter() {
           match specifiers {
@@ -93,8 +78,7 @@ fn analyze_ast_imports(ast: &javascript_parser::ParsedSource) -> Result<(), Stri
     }
   }
 
-  println!("import => \n {:?}", &deps);
-  Ok(())
+  Ok(deps)
 }
 
 pub fn analyze_all() {
@@ -106,7 +90,6 @@ pub fn analyze_all() {
 
 #[derive(Debug)]
 pub struct JavascriptDependence {
-  pub code: String,
   pub modules: Vec<String>,
   pub source: String,
 }
@@ -133,13 +116,14 @@ impl JavascriptFile {
     let code = reader::read_file(path).unwrap();
     let ast: javascript_parser::ParsedSource =
       javascript_parser::parse(&code).expect("解析 ast 失败");
-    let _result = analyze_ast_imports(&ast);
+    let result = analyze_ast_imports(&ast);
+    let imports: HashMap<String, JavascriptDependence> = HashMap::new();
 
     JavascriptFile {
       path: path.to_string(),
       code,
       ast,
-      imports: HashMap::new(),
+      imports,
     }
   }
 }
