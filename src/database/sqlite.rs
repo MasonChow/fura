@@ -89,10 +89,3 @@ pub async fn insert_npm_pkg(npm_pkg: NpmPkg) {
     Err(err) => panic!("insert npm_pkg failed: {}", err),
   };
 }
-
-pub struct TableFile {
-  pub id: i32,
-  pub name: String,
-  pub path: String,
-  pub size: u32,
-}

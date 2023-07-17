@@ -36,16 +36,18 @@ CREATE TABLE IF NOT EXISTS dir_file_relation (
   file_id INTEGER NOT NULL
 );
 
-/** 创建文件夹与文件关系表 */
+/** 创建文件依赖关系表 */
 CREATE TABLE IF NOT EXISTS file_reference (
   /** 文件之间引用关系表id，自增 */
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   /** 文件id */
   file_id INTEGER NOT NULL,
-  /** 引用关系id */
+  /** 引用关系组件 id */
   ref_id INTEGER NOT NULL,
-  /** 引用类型，1表示引用，2表示被引用 */
-  type INTEGER NOT NULL,
+  /** 引用关系类型(包管理类型)，npm 包, file 等 */
+  ref_type TEXT NOT NULL,
+  /** 引用模块(内容) */
+  module TEXT NOT NULL,
   /** 备注 */
   remark TEXT ALLOW NULL
 );

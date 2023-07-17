@@ -1,3 +1,5 @@
+use deno_ast::swc::common::source_map;
+
 use crate::database::sqlite;
 use crate::project::ast_parser::javascript as javascript_parser;
 use crate::project::ast_parser::javascript::ast;
@@ -36,30 +38,55 @@ fn query_js_files() -> Result<HashMap<String, u64>, String> {
 
 /// 分析 AST 中的 import 语句
 fn analyze_ast_imports(ast: &javascript_parser::ParsedSource) -> Result<(), String> {
-  let mut deps = JavascriptDependency {
-    code: ast.text_info().text().to_string(),
-    module: vec![],
-    source: "".to_string(),
+  let mut deps = JavascriptDependence {
+    code: String::from(""),
+    modules: vec![],
+    source: String::from(""),
   };
 
   for module in ast.module().body.iter() {
+    let source_code = &ast.text_info().text().to_string().clone();
+
     if let ast::ModuleItem::ModuleDecl(decl) = module {
-      println!("import => {:?}", decl);
       if let ast::ModuleDecl::Import(import_decl) = decl {
-        deps.source = import_decl.src.value.to_string();
+        let position_json = serde_json::to_string(&import_decl.src.span).unwrap();
+        let source_start_idx: usize = position_json.find("start").unwrap();
+        let source_end_idx: usize = position_json.find("end").unwrap();
+        let source_code = &source_code.clone()[source_start_idx..source_end_idx].to_string();
+
+        // deps.code = source_code.to_string();
+
+        println!("code \n {:?} \n {:?} \n", &source_code, position_json);
+
+        // println!(
+        //   "source {:?} {:?} {:?} \n {:?}",
+        //   source_start_idx, source_end_idx, position_json, import_decl
+        // );
 
         for specifiers in import_decl.specifiers.iter() {
           match specifiers {
-            ast::ImportSpecifier::Named(named_specifier) => {
-              deps.module.push(named_specifier.local.sym.to_string());
-            }
+            ast::ImportSpecifier::Named(named_specifier) => match &named_specifier.imported {
+              None => {
+                deps.modules.push(named_specifier.local.sym.to_string());
+              }
+              Some(imported) => match imported {
+                ast::ModuleExportName::Ident(ident) => {
+                  deps.modules.push(ident.sym.to_string());
+                }
+                others => {
+                  println!("存在未处理匹配的内容 {:?}", others);
+                }
+              },
+            },
             ast::ImportSpecifier::Default(default_specifier) => {
-              deps.module.push(default_specifier.local.sym.to_string());
+              deps.modules.push(default_specifier.local.sym.to_string());
             }
             ast::ImportSpecifier::Namespace(namespace_specifier) => {
-              deps.module.push(namespace_specifier.local.sym.to_string());
+              deps.modules.push(namespace_specifier.local.sym.to_string());
             }
-            _ => {}
+            o => {
+              println!("存在未处理匹配的内容, {:?}", o);
+            }
           }
         }
       }
@@ -78,9 +105,9 @@ pub fn analyze_all() {
 }
 
 #[derive(Debug)]
-pub struct JavascriptDependency {
+pub struct JavascriptDependence {
   pub code: String,
-  pub module: Vec<String>,
+  pub modules: Vec<String>,
   pub source: String,
 }
 
@@ -98,7 +125,7 @@ pub struct JavascriptFile {
   pub path: String,
   pub code: String,
   pub ast: javascript_parser::ParsedSource,
-  pub imports: HashMap<String, JavascriptDependency>,
+  pub imports: HashMap<String, JavascriptDependence>,
 }
 
 impl JavascriptFile {
