@@ -63,15 +63,97 @@ fn analyze_imports(ast: &ParsedSource) -> Result<HashMap<String, Vec<String>>, S
   Ok(imports_map)
 }
 
+/**
+
+用来代表一个 JavaScript 代码解析内容，它将 JavaScript 代码作为输入并解析它。
+
+Examples:
+
+```rust
+  use fura::parser::javascript;
+  use std::path::Path;
+  use serde_json;
+
+  let code = r#"
+    import a from './a';
+    import b, { c } from './b';
+    import  * as d from './d';
+    import e,  *  as f from './f';
+  "#;
+
+  let result = javascript::Code::new(code);
+  let expected = serde_json::json!({
+    "./a": [
+      "default"
+    ],
+    "./b": [
+      "default",
+      "c"
+    ],
+    "./d": [
+      "*"
+    ],
+    "./f": [
+      "default",
+      "*"
+    ]
+  });
+
+  assert_eq!(expected, serde_json::json!(&result.imports));
+```
+*/
 #[derive(Debug)]
-/// `File` 结构代表 Rust 中的一个文件解析器，它将文件路径作为输入并初始化一个 `Code` 对象。
-///
-/// Properties:
-///
-/// * `file_path`: 表示将被解析的文件的路径的字符串。
-/// * `code_parser`: `code_parser` 属性是 `Code` 结构的一个实例。它负责解析和分析“file_path”属性指定的文件中的代码。
+pub struct Code {
+  /// 被解析的 JavaScript 代码的字符串。
+  pub code: String,
+  /*
+   被解析的 JavaScript 代码中的导入语句的哈希表。`HashMap<导入路径, Vec<导入模块>>`
+
+   - 例如，如果导入语句是 `import a from './a'`，那么键将是 `./a`，值将是 `default`。
+   - 如果导入语句是 `import * as a from './a'`，那么键将是 `./a`，值将是 `*`。
+   - 如果导入语句是 `import a, { b } from './a'`，那么键将是 `./a`，值将是 `default` 和 `b`。
+   - 如果导入语句是 `import a, * as b from './a'`，那么键将是 `./a`，值将是 `a` 和 `*`。
+  */
+  pub imports: HashMap<String, Vec<String>>,
+}
+
+impl Code {
+  /*
+   * 创建一个新的 `Code` 实例。
+   *
+   * - @param code 被解析的 JavaScript 代码的字符串。
+   * - @returns `Code` 实例。
+   */
+  pub fn new(code: &str) -> Code {
+    let ast: ParsedSource = parse(&code).expect("解析 ast 失败");
+    let imports = analyze_imports(&ast).unwrap();
+
+    Code {
+      code: code.to_string(),
+      imports,
+    }
+  }
+}
+
+/**
+
+用来代表一个 JavaScript 文件解析内容，它将 JavaScript 文件作为输入并解析它。
+
+Examples:
+
+```rust
+  use fura::parser::javascript;
+  use std::path::Path;
+  let file_path = Path::new("./tests/mock/files/imports.ts");
+  let result = javascript::File::new(file_path.to_str().unwrap());
+```
+
+*/
+#[derive(Debug)]
 pub struct File {
+  /// 被解析的 JavaScript 文件的路径。
   pub file_path: String,
+  /// [`Code`](struct@Code) 实例。
   pub code_parser: Code,
 }
 
@@ -83,48 +165,6 @@ impl File {
     File {
       file_path: file_path.to_string(),
       code_parser,
-    }
-  }
-}
-
-// `JavascriptFile` 结构代表一个 JavaScript 文件，包含其路径、代码、抽象语法树 (AST) 和导入等信息。
-///
-/// Properties:
-///
-/// * `code`: “code”属性是一个字符串，表示文件中包含的实际 JavaScript 代码。
-/// * `imports`: “imports”属性是一个“HashMap”，用于存储 JavaScript
-/// 文件的依赖项。每个依赖项都由“JavascriptDependency”结构表示，“HashMap”中的键是依赖项的名称。
-#[derive(Debug)]
-pub struct Code {
-  pub code: String,
-  /// 文件导入的模块，key 为模块路径，value 为导入的模块
-  /// 例如：
-  /// ```js
-  /// import a from './a';
-  /// import b, { c } from './b';
-  /// import * as d from './d';
-  /// import e, * as f from './f';
-  /// ```
-  /// 则 imports 为：
-  /// ```json
-  /// {
-  ///   "./a": ["a"],
-  ///   "./b": ["b", "c"],
-  ///   "./d": ["d"],
-  ///   "./f": ["e", "f"]
-  /// }
-  /// ```
-  pub imports: HashMap<String, Vec<String>>,
-}
-
-impl Code {
-  pub fn new(code: &str) -> Code {
-    let ast: ParsedSource = parse(&code).expect("解析 ast 失败");
-    let imports = analyze_imports(&ast).unwrap();
-
-    Code {
-      code: code.to_string(),
-      imports,
     }
   }
 }
