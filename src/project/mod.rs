@@ -2,7 +2,6 @@ use futures::executor::block_on;
 mod init_base;
 
 pub mod analyze;
-pub mod ast_parser;
 pub mod reader;
 
 /// 初始化项目数据。
