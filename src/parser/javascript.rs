@@ -118,12 +118,10 @@ pub struct Code {
 }
 
 impl Code {
-  /*
-   * 创建一个新的 `Code` 实例。
-   *
-   * - @param code 被解析的 JavaScript 代码的字符串。
-   * - @returns `Code` 实例。
-   */
+  /// 创建一个新的 `Code` 实例。
+  ///
+  /// - @param code 被解析的 JavaScript 代码的字符串。
+  /// - @returns `Code` 实例。
   pub fn new(code: &str) -> Code {
     let ast: ParsedSource = parse(&code).expect("解析 ast 失败");
     let imports = analyze_imports(&ast).unwrap();

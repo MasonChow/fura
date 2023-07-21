@@ -21,5 +21,6 @@ pub fn init_project_data(root_path: &str, exclude_paths: Option<Vec<&str>>) {
     block_on(init_base::insert_package_json_data(&package_json));
   }
 
-  handler::javascript::analyze_all(None);
+  let _javascript_file =
+    handler::javascript::ProjectJavascriptFile::new(root_path.to_string(), None);
 }

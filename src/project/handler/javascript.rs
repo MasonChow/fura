@@ -34,31 +34,91 @@ fn query_js_files() -> Result<HashMap<String, u64>, String> {
   Ok(js_file_map)
 }
 
-// 自动补全处理 js 的 import 语句，自动匹配存在的路径
-// './a/b' -> './b/index.(js|jsx|ts|tsx|cjs|mjs)'
-// './a' -> './a.(js|jsx|ts|tsx|cjs|mjs)'
-// 'antd' -> package.json -> dependencies -> antd
-// 'antd/lib/button' -> package.json -> dependencies -> antd
-pub fn auto_complete_import_path(
-  import_path: &str,
-  project_files: Vec<String>,
-  npm_packages: Option<HashMap<String, String>>,
-  alias: Option<HashMap<String, String>>,
-) -> String {
-  // 1. 判断是否是直接是文件后缀 .js .jsx .ts .tsx .cjs .mjs
-  for ext in EXTENSIONS.iter() {
-    if import_path.ends_with(ext) {
-      return import_path.to_string();
-    }
-  }
-
-  // 2. 判断是否是相对路径
-
-  return import_path.to_string();
+pub struct File {
+  pub path: String,
+  pub imports: HashMap<String, Vec<String>>,
 }
 
+impl File {
+  pub fn auto_complete_import_path(
+    &self,
+    base_path: &String,
+    alias: &Option<HashMap<String, String>>,
+  ) {
+  }
+}
+
+pub struct ProjectJavascriptFile {
+  pub base_path: String,
+  pub alias: Option<HashMap<String, String>>,
+  pub files: HashMap<String, File>,
+}
+
+impl ProjectJavascriptFile {
+  pub fn new(base_path: String, alias: Option<HashMap<String, String>>) -> Self {
+    let mut files: HashMap<String, File> = HashMap::new();
+
+    let js_file_map = query_js_files().unwrap();
+
+    for file_item in js_file_map {
+      let (path, _) = &file_item;
+      let result = parser::javascript::File::new(&path);
+
+      files.insert(
+        path.to_string(),
+        File {
+          path: path.to_string(),
+          imports: result.code_parser.imports,
+        },
+      );
+    }
+
+    ProjectJavascriptFile {
+      base_path,
+      alias,
+      files,
+    }
+  }
+  // 自动补全处理 js 的 import 语句，自动匹配存在的路径
+  // './a/b' -> './b/index.(js|jsx|ts|tsx|cjs|mjs)'
+  // './a' -> './a.(js|jsx|ts|tsx|cjs|mjs)'
+  // 'antd' -> package.json -> dependencies -> antd
+  // 'antd/lib/button' -> package.json -> dependencies -> antd
+  pub fn auto_complete_import_path(&self) {
+    let files = &self.files;
+
+    for (key, value) in files {}
+  }
+}
+
+// pub fn auto_complete_import_path(project_file: &ProjectJavascriptFile) -> ProjectJavascriptFile {
+// let mut result: String = import_path.to_string();
+
+// // 1. 判断是否是直接是文件后缀 .js .jsx .ts .tsx .cjs .mjs
+// for ext in EXTENSIONS.iter() {
+//   if result.ends_with(ext) {
+//     return result;
+//   }
+// }
+
+// match alias {
+//   Some(alias) => {
+//     for (key, value) in alias {
+//       if result.starts_with(&key) {
+//         result = result.replace(&key, &value);
+//       }
+//     }
+//   }
+//   None => {}
+// }
+
+// return result;
+
+// 2. 判断是否是相对路径
+// }
+
 /// 分析项目内所有 js 文件
-pub fn analyze_all(alias: Option<HashMap<String, String>>) {
+pub fn analyze_all(base_path: String, alias: Option<HashMap<String, String>>) {
   let js_file_map = query_js_files().unwrap();
   for (path, _) in js_file_map {
     let result = parser::javascript::File::new(&path);
