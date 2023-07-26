@@ -36,8 +36,8 @@ fn query_js_files() -> Result<HashMap<String, u64>, String> {
 }
 
 /// 查询项目内所有 js 文件
-fn query_npm_pkgs() -> Result<HashMap<String, u64>, String> {
-  let mut npm_pkg_map: HashMap<String, u64> = HashMap::new();
+fn query_npm_pkgs() -> Result<HashMap<String, String>, String> {
+  let mut npm_pkg_map: HashMap<String, String> = HashMap::new();
 
   let conn = sqlite::get_db().expect("获取 DB 失败");
 
@@ -45,8 +45,8 @@ fn query_npm_pkgs() -> Result<HashMap<String, u64>, String> {
     .prepare(
       r#"
       SELECT
-        id,
-        name
+        name,
+        version
       FROM
         "npm_pkg";
       "#,
@@ -56,8 +56,8 @@ fn query_npm_pkgs() -> Result<HashMap<String, u64>, String> {
   let result = stmt.query_map([], |row| Ok((row.get(0).unwrap(), row.get(1).unwrap())));
 
   for item in result.unwrap() {
-    let (id, name) = item.unwrap();
-    npm_pkg_map.insert(name, id);
+    let (name, version) = item.unwrap();
+    npm_pkg_map.insert(name, version);
   }
 
   Ok(npm_pkg_map)
@@ -70,18 +70,17 @@ pub struct File {
 }
 
 #[derive(Debug)]
-pub struct ProjectJavascriptFile {
-  pub base_path: String,
-  pub alias: Option<HashMap<String, String>>,
+pub struct ProjectJavascriptDataInfo {
   pub files: HashMap<String, File>,
+  pub npm_pkgs: HashMap<String, String>,
 }
 
-impl ProjectJavascriptFile {
-  pub fn new(base_path: String, alias: Option<HashMap<String, String>>) -> Self {
-    let mut files: HashMap<String, File> = HashMap::new();
-
+impl ProjectJavascriptDataInfo {
+  pub fn new() -> Self {
     let js_file_map = query_js_files().unwrap();
+    let npm_pkgs = query_npm_pkgs().unwrap();
 
+    let mut files: HashMap<String, File> = HashMap::new();
     for file_item in js_file_map {
       let (path, _) = &file_item;
       let result = parser::javascript::File::new(&path);
@@ -95,21 +94,21 @@ impl ProjectJavascriptFile {
       );
     }
 
-    ProjectJavascriptFile {
-      base_path,
-      alias,
-      files,
-    }
+    ProjectJavascriptDataInfo { files, npm_pkgs }
   }
   // 自动补全处理 js 的 import 语句，自动匹配存在的路径
   // './a/b' -> './b/index.(js|jsx|ts|tsx|cjs|mjs)'
   // './a' -> './a.(js|jsx|ts|tsx|cjs|mjs)'
   // 'antd' -> package.json -> dependencies -> antd
   // 'antd/lib/button' -> package.json -> dependencies -> antd
-  pub fn auto_complete_import_path(&self) -> Self {
+  pub fn auto_complete_import_path(
+    &mut self,
+    project_alias: Option<HashMap<String, String>>,
+  ) -> &Self {
     let files = &self.files;
-    let npm_pkgs = query_npm_pkgs().unwrap();
+    let npm_pkgs = &self.npm_pkgs;
     let mut result_files: HashMap<String, File> = HashMap::new();
+    let alias = &project_alias;
 
     for (file_path, file) in files {
       let file_imports = &file.imports;
@@ -122,7 +121,7 @@ impl ProjectJavascriptFile {
         let mut deps_path: String = import_path.to_string();
 
         // 有传入 alias，则进行匹配替换
-        match &self.alias {
+        match alias {
           Some(alias) => {
             for (key, value) in alias {
               if deps_path.starts_with(key) {
@@ -180,10 +179,8 @@ impl ProjectJavascriptFile {
       );
     }
 
-    ProjectJavascriptFile {
-      base_path: self.base_path.clone(),
-      alias: self.alias.clone(),
-      files: result_files,
-    }
+    self.files = result_files;
+
+    self
   }
 }

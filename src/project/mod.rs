@@ -21,9 +21,9 @@ pub fn init_project_data(root_path: &str, exclude_paths: Option<Vec<&str>>) {
     block_on(init_base::insert_package_json_data(&package_json));
   }
 
-  let javascript_file =
-    handler::javascript::ProjectJavascriptFile::new(root_path.to_string(), None);
-  let with_auto_paths_file = javascript_file.auto_complete_import_path();
+  let mut javascript_file = handler::javascript::ProjectJavascriptDataInfo::new();
+
+  let with_auto_paths_file = javascript_file.auto_complete_import_path(None);
 
   println!("init project data success, {:?}", with_auto_paths_file);
 }
