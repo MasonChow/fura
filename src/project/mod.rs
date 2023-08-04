@@ -1,4 +1,5 @@
 use futures::executor::block_on;
+use std::collections::HashMap;
 mod init_base;
 
 pub mod handler;
@@ -22,8 +23,11 @@ pub fn init_project_data(root_path: &str, exclude_paths: Option<Vec<&str>>) {
   }
 
   let mut javascript_file = handler::javascript::ProjectJavascriptDataInfo::new();
+  let mut alias: HashMap<String, String> = HashMap::new();
 
-  let with_auto_paths_file = javascript_file.auto_complete_import_path(None);
+  alias.insert("@".to_string(), root_path.to_string());
+
+  let with_auto_paths_file = javascript_file.auto_complete_import_path(Some(alias));
 
   println!("init project data success, {:?}", with_auto_paths_file);
 }

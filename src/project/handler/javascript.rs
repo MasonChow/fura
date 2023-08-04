@@ -1,5 +1,6 @@
 use crate::database::sqlite;
 use crate::parser;
+use crate::utils::module_specifier;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -112,7 +113,7 @@ impl ProjectJavascriptDataInfo {
 
     for (file_path, file) in files {
       let file_imports = &file.imports;
-      let file_real_path = PathBuf::from(&file_path);
+      let mut file_real_path = PathBuf::from(&file_path);
       let mut real_imports: HashMap<String, Vec<String>> = HashMap::new();
 
       for (import_path, import_modules) in file_imports {
@@ -134,30 +135,62 @@ impl ProjectJavascriptDataInfo {
 
         let mut deps_real_path = PathBuf::from(&deps_path);
 
-        // 如果是相对路径则进行拼接
-        if deps_real_path.is_relative() {
-          deps_real_path = file_real_path.join(&deps_real_path);
-        }
-
-        // 匹配出真实的依赖的文件路径
-        for ext in EXTENSIONS {
-          let mut deps_real_path_with_ext = deps_real_path.clone();
-          deps_real_path_with_ext.set_extension(ext);
-
-          // 真实的依赖文件路径存在，则跳出循环
-          if files.contains_key(deps_real_path_with_ext.to_str().unwrap()) {
-            deps_real_path = deps_real_path_with_ext;
-            break;
+        match module_specifier::resolve_import(
+          deps_real_path.to_str().unwrap(),
+          file_real_path.to_str().unwrap(),
+        ) {
+          Ok(real_path) => {
+            println!("real_path1: {:?}", real_path);
+          }
+          Err(_) => {
+            println!("deps_real_path1: {:?}", deps_real_path);
+            continue;
           }
         }
 
+        // 如果是相对路径则进行拼接
+        // if deps_path.starts_with("./") || deps_path.starts_with("../") {
+        //   deps_real_path = file_real_path.join(&deps_path).as_path().normalize()
+        // }
+
+        // 匹配出真实的依赖的文件路径
+        // for ext in EXTENSIONS {
+        //   let mut deps_real_path_with_ext = deps_real_path.clone();
+
+        //   deps_real_path_with_ext.set_extension(ext);
+
+        //   match deps_real_path_with_ext.canonicalize() {
+        //     Ok(real_path) => {
+        //       deps_real_path = real_path;
+        //       break;
+        //     }
+        //     // 如果没有匹配到，则尝试匹配 index 文件
+        //     Err(_) => {
+        //       let mut deps_real_path_with_index = deps_real_path.clone();
+
+        //       deps_real_path_with_index.set_file_name("index");
+        //       deps_real_path_with_index.set_extension(ext);
+
+        //       match deps_real_path_with_index.canonicalize() {
+        //         Ok(real_path) => {
+        //           deps_real_path = real_path;
+        //           break;
+        //         }
+        //         Err(_) => continue,
+        //       }
+        //     }
+        //   }
+        // }
+
         match deps_real_path.extension() {
-          Some(_) => {}
+          Some(_) => {
+            println!("deps_real_path: {:?}", deps_real_path);
+          }
           None => {
             // 如果没有后缀，则尝试匹配 package.json 的 dependencies
             for pkg in npm_pkgs.keys() {
-              if deps_real_path.starts_with(pkg) {
-                deps_real_path = PathBuf::from(pkg);
+              if file_real_path.starts_with(pkg) {
+                file_real_path = PathBuf::from(pkg);
                 break;
               }
             }
