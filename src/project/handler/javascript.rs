@@ -1,8 +1,8 @@
 use crate::database::sqlite;
 use crate::parser;
-use crate::utils::module_specifier;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use url::Url;
 
 const EXTENSIONS: [&str; 6] = ["js", "jsx", "ts", "tsx", "cjs", "mjs"];
 
@@ -133,54 +133,48 @@ impl ProjectJavascriptDataInfo {
           None => {}
         }
 
-        let mut deps_real_path = PathBuf::from(&deps_path);
+        // 先转成 URL 的形态进行路径拼接处理
+        let mut deps_url = String::from("file://");
+        deps_url.push_str(&file_real_path.to_str().unwrap());
+        let mut deps_real_url = Url::parse(&deps_url).expect("解析失败");
 
-        match module_specifier::resolve_import(
-          deps_real_path.to_str().unwrap(),
-          file_real_path.to_str().unwrap(),
-        ) {
-          Ok(real_path) => {
-            println!("real_path1: {:?}", real_path);
+        // 如果是相对路径则进行拼接
+        if deps_path.starts_with("./") || deps_path.starts_with("../") {
+          deps_real_url = deps_real_url.join(&deps_path).unwrap();
+        }
+
+        // 匹配出真实的依赖的文件路径
+        for ext in EXTENSIONS {
+          let mut deps_real_path_with_ext = deps_real_url.to_file_path().unwrap();
+
+          if !deps_real_path_with_ext.extension().is_some() {
+            deps_real_path_with_ext.set_extension(ext);
           }
-          Err(_) => {
-            println!("deps_real_path1: {:?}", deps_real_path);
-            continue;
+
+          match deps_real_path_with_ext.canonicalize() {
+            Ok(real_path) => {
+              deps_real_url = deps_real_url.join(&real_path.to_str().unwrap()).unwrap();
+              break;
+            }
+            // 如果没有匹配到，则尝试匹配 index 文件
+            Err(_) => {
+              let mut deps_real_path_with_index = deps_real_url.to_file_path().unwrap();
+
+              deps_real_path_with_index.set_file_name("index");
+              deps_real_path_with_index.set_extension(ext);
+
+              match deps_real_path_with_index.canonicalize() {
+                Ok(real_path) => {
+                  deps_real_url = deps_real_url.join(&real_path.to_str().unwrap()).unwrap();
+                  break;
+                }
+                Err(_) => continue,
+              }
+            }
           }
         }
 
-        // 如果是相对路径则进行拼接
-        // if deps_path.starts_with("./") || deps_path.starts_with("../") {
-        //   deps_real_path = file_real_path.join(&deps_path).as_path().normalize()
-        // }
-
-        // 匹配出真实的依赖的文件路径
-        // for ext in EXTENSIONS {
-        //   let mut deps_real_path_with_ext = deps_real_path.clone();
-
-        //   deps_real_path_with_ext.set_extension(ext);
-
-        //   match deps_real_path_with_ext.canonicalize() {
-        //     Ok(real_path) => {
-        //       deps_real_path = real_path;
-        //       break;
-        //     }
-        //     // 如果没有匹配到，则尝试匹配 index 文件
-        //     Err(_) => {
-        //       let mut deps_real_path_with_index = deps_real_path.clone();
-
-        //       deps_real_path_with_index.set_file_name("index");
-        //       deps_real_path_with_index.set_extension(ext);
-
-        //       match deps_real_path_with_index.canonicalize() {
-        //         Ok(real_path) => {
-        //           deps_real_path = real_path;
-        //           break;
-        //         }
-        //         Err(_) => continue,
-        //       }
-        //     }
-        //   }
-        // }
+        let deps_real_path = deps_real_url.to_file_path().unwrap();
 
         match deps_real_path.extension() {
           Some(_) => {
