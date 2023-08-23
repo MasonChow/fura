@@ -22,12 +22,31 @@ pub fn init_project_data(root_path: &str, exclude_paths: Option<Vec<&str>>) {
     block_on(init_base::insert_package_json_data(&package_json));
   }
 
-  let mut javascript_file = handler::javascript::ProjectJavascriptDataInfo::new();
   let mut alias: HashMap<String, String> = HashMap::new();
-
   alias.insert("@".to_string(), root_path.to_string());
 
-  let with_auto_paths_file = javascript_file.auto_complete_import_path(Some(alias));
+  let javascript_file = handler::javascript::ProjectJavascriptDataInfo::new(&Some(alias));
 
-  println!("init project data success, {:?}", with_auto_paths_file);
+  println!("init project data success, {:?}", javascript_file);
+
+  // let insert_file_refs: Vec<(u64, u64, String)> = Vec::new();
+
+  // for key in javascript_file.files.keys() {
+  //   let file = javascript_file.files.get(key).unwrap();
+  //   let file_id = file.id;
+
+  //   for import in file.imports.keys() {
+  //     let import_file = javascript_file.files.get(import).unwrap();
+  //     let import_file_id = import_file.id;
+  //     let import_modules = file.imports.get(import).unwrap();
+
+  //     // for import_module in import_modules {
+  //     //   let import_module_id = with_auto_paths_file.npm_pkgs.get(import_module).unwrap().id;
+
+  //     //   insert_file_refs.push((file_id, import_module_id, import_module.to_string()));
+  //     // }
+
+  //     println!("{} -> {} -> {:?}", key, import, import_modules);
+  //   }
+  // }
 }
