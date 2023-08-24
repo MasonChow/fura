@@ -22,8 +22,9 @@ pub fn init_project_data(root_path: &str, exclude_paths: Option<Vec<&str>>) {
     block_on(init_base::insert_package_json_data(&package_json));
   }
 
-  let mut alias: HashMap<String, String> = HashMap::new();
-  alias.insert("@".to_string(), root_path.to_string());
+  let mut alias: HashMap<&str, &str> = HashMap::new();
+  let alias_path = root_path.to_string() + "/src";
+  alias.insert("@", &alias_path);
 
   let javascript_file = handler::javascript::ProjectJavascriptDataInfo::new(&Some(alias));
 

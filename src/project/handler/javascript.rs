@@ -1,6 +1,6 @@
 use crate::database::sqlite;
 use crate::parser;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use url::Url;
 
@@ -29,7 +29,7 @@ pub struct ProjectJavascriptDataInfo {
 }
 
 impl ProjectJavascriptDataInfo {
-  pub fn new(alias: &Option<HashMap<String, String>>) -> Self {
+  pub fn new(alias: &Option<HashMap<&str, &str>>) -> Self {
     let js_file_map = query_js_files().unwrap();
     let npm_pkgs = query_npm_pkgs().unwrap();
 
@@ -130,7 +130,7 @@ fn auto_compete_import_path(
   imports: &HashMap<String, Vec<String>>,
   project_files: &HashMap<String, u64>,
   project_npm_pkgs: &HashMap<String, u64>,
-  alias: &Option<HashMap<String, String>>,
+  alias: &Option<HashMap<&str, &str>>,
 ) -> FileImports {
   let mut result = FileImports {
     file: HashMap::new(),
@@ -145,16 +145,21 @@ fn auto_compete_import_path(
     match alias {
       Some(alias) => {
         for (key, value) in alias {
-          if deps_path.starts_with(key) {
-            deps_path = deps_path.replace(key, value);
+          if let Some(start_path) = deps_path.split('/').next() {
+            if &start_path == key {
+              deps_path = deps_path.replacen(key, value, 1);
+            }
           }
         }
       }
       None => {}
     }
 
-    if let Some(deps_real_path) = resolve_import_file_path(&deps_path, &file_path, &project_files) {
-      println!("match file {:?} {:?}", &import_path, &deps_real_path);
+    if let Some(deps_real_path) = resolve_import_file_path(
+      &deps_path,
+      &file_path,
+      &project_files.keys().map(|s| s.as_str()).collect(),
+    ) {
       result
         .file
         .insert(deps_real_path.to_string(), import_modules.clone());
@@ -163,33 +168,8 @@ fn auto_compete_import_path(
 
     println!(
       "un match -> check npm pkg {:?} {:?}",
-      &file_path, &deps_path
+      &deps_path, &file_path
     );
-
-    // match resolve_import_file_path(&deps_path, &file_path, &project_files) {
-    //   Some(deps_real_path) => {
-    //     println!("match file {:?}", &deps_real_path);
-    //     result
-    //       .file
-    //       .insert(deps_real_path.to_string(), import_modules.clone());
-    //     continue;
-    //   }
-
-    //   None => {
-    //     println!(
-    //       "un match -> check npm pkg {:?} {:?}",
-    //       &file_path, &deps_path
-    //     );
-
-    //     for pkg in project_npm_pkgs.keys() {
-    //       if deps_path.starts_with(pkg) {
-    //         // file_real_path = PathBuf::from(pkg);
-    //         // break;
-    //         println!("match npm pkg {:?}", pkg);
-    //       }
-    //     }
-    //   }
-    // }
   }
 
   result
@@ -198,7 +178,7 @@ fn auto_compete_import_path(
 fn resolve_import_file_path(
   import_path: &str,
   file_path: &str,
-  project_files: &HashMap<String, u64>,
+  project_files: &HashSet<&str>,
 ) -> Option<String> {
   // 先转成 URL 的形态进行路径拼接处理
   let mut url = String::from("file://");
@@ -209,37 +189,61 @@ fn resolve_import_file_path(
   if import_path.starts_with("./") || import_path.starts_with("../") {
     deps_real_url = deps_real_url.join(import_path).unwrap();
   }
+  // 如果是绝对路径则直接转成 URL
+  else {
+    let mut url = String::from("file://");
+
+    // 如果 import_path 以 / 开头，则直接将其添加到 url 中；
+    // 否则，在 url 后添加 /，再添加 import_path。
+    if import_path.to_string().starts_with("/") {
+      url.push_str(import_path);
+    } else {
+      url.push_str("/");
+      url.push_str(import_path);
+    }
+
+    deps_real_url = Url::parse(&url).unwrap();
+  }
 
   let is_real_file = |match_path: &str| -> bool {
-    return project_files.contains_key(match_path);
+    return project_files.contains(match_path);
   };
 
-  let mut deps_real_path: PathBuf = deps_real_url.to_file_path().unwrap();
+  let deps_real_path: PathBuf = deps_real_url.to_file_path().unwrap();
 
   // 如果是真实文件则返回
-  if is_real_file(&deps_real_path.to_str().unwrap()) {
+  if deps_real_path.extension().is_some() && is_real_file(&deps_real_path.to_str().unwrap()) {
     return Some(deps_real_path.to_str().unwrap().to_string());
   }
 
   // 尝试补充后缀名进行匹配
   for ext in EXTENSIONS {
-    if !deps_real_path.extension().is_some() {
-      deps_real_path.set_extension(ext);
+    if deps_real_path.extension().is_some() {
+      continue;
     }
 
+    let mut test_file_path = deps_real_path.clone();
+
+    test_file_path.set_extension(ext);
+
     // 如果是真实文件则返回
-    if is_real_file(&deps_real_path.to_str().unwrap()) {
-      return Some(deps_real_path.to_str().unwrap().to_string());
+    if is_real_file(&test_file_path.to_str().unwrap()) {
+      return Some(test_file_path.to_str().unwrap().to_string());
+    }
+  }
+
+  for ext in EXTENSIONS {
+    if deps_real_path.extension().is_some() {
+      continue;
     }
 
-    // 设置 index 文件的文件名
-    deps_real_path.set_file_name("index");
-    // 设置 index 文件的扩展名
-    deps_real_path.set_extension(ext);
+    let mut test_file_path = deps_real_path.clone().join("index");
+
+    test_file_path.set_extension(ext);
 
     // 如果是真实文件则返回
-    if is_real_file(&deps_real_path.to_str().unwrap()) {
-      return Some(deps_real_path.to_str().unwrap().to_string());
+    if is_real_file(&test_file_path.to_str().unwrap()) {
+      return Some(test_file_path.to_str().unwrap().to_string());
     }
   }
 
@@ -248,39 +252,43 @@ fn resolve_import_file_path(
 
 #[cfg(test)]
 mod tests {
+
   use super::*;
 
   #[test]
-  fn test_auto_compete_import_path() {
-    let file_path = String::from("/path/to/file.js");
-    let mut imports: HashMap<String, Vec<String>> = HashMap::new();
-    imports.insert(String::from("./a"), vec![String::from("a")]);
-    imports.insert(String::from("antd"), vec![String::from("Button")]);
+  fn test_resolve_import_file_path() {
+    let mut project_files = HashSet::new();
 
-    let mut project_files: HashMap<String, u64> = HashMap::new();
-    project_files.insert(String::from("/path/to/a.js"), 1);
-    project_files.insert(String::from("/path/to/b.js"), 2);
+    project_files.insert("/root/src/a/b.js");
+    project_files.insert("/root/src/a/b/index.js");
+    project_files.insert("/root/src/a.js");
+    project_files.insert("/root/src/c.tsx");
+    project_files.insert("/root/src/d/index.tsx");
+    project_files.insert("/root/src/index.js");
 
-    let mut project_npm_pkgs: HashMap<String, u64> = HashMap::new();
-    project_npm_pkgs.insert(String::from("antd"), 1);
-
-    let alias: Option<HashMap<String, String>> = None;
-
-    let result = auto_compete_import_path(
-      file_path,
-      &imports,
-      &project_files,
-      &project_npm_pkgs,
-      &alias,
+    assert_eq!(
+      resolve_import_file_path("./c", "/root/src/index.js", &project_files),
+      Some("/root/src/c.tsx".to_string())
     );
 
-    let mut expected_file_imports: HashMap<String, Vec<String>> = HashMap::new();
-    expected_file_imports.insert(String::from("/path/to/a.js"), vec![String::from("a")]);
+    assert_eq!(
+      resolve_import_file_path("./d", "/root/src/index.js", &project_files),
+      Some("/root/src/d/index.tsx".to_string())
+    );
 
-    let mut expected_npm_pkg_imports: HashMap<String, Vec<String>> = HashMap::new();
-    expected_npm_pkg_imports.insert(String::from("antd"), vec![String::from("Button")]);
+    assert_eq!(
+      resolve_import_file_path("lodash", "/root/src/index.js", &project_files),
+      None
+    );
 
-    assert_eq!(result.file, expected_file_imports);
-    assert_eq!(result.npm_pkg, expected_npm_pkg_imports);
+    assert_eq!(
+      resolve_import_file_path("./a/b", "/root/src/index.js", &project_files),
+      Some("/root/src/a/b.js".to_string())
+    );
+
+    assert_eq!(
+      resolve_import_file_path("./a", "/root/src/index.js", &project_files),
+      Some("/root/src/a.js".to_string())
+    );
   }
 }
