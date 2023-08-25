@@ -99,3 +99,24 @@ pub async fn insert_package_json_data(package_json: &ProjectPackageJson) {
 
   join_all(insert_tasks).await;
 }
+
+pub async fn insert_file_references(
+  file_refs: Vec<(u64, u64, &str, &str)>,
+) -> Result<(), Box<dyn std::error::Error>> {
+  let mut insert_tasks = vec![];
+
+  for file_ref in file_refs {
+    let insert_data = sqlite::FileRefs {
+      file_id: file_ref.0,
+      ref_id: file_ref.1,
+      module: file_ref.2,
+      ref_type: file_ref.3,
+    };
+    let task = database::sqlite::insert_file_reference(insert_data);
+    insert_tasks.push(task);
+  }
+
+  join_all(insert_tasks).await;
+
+  Ok(())
+}

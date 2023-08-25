@@ -30,24 +30,48 @@ pub fn init_project_data(root_path: &str, exclude_paths: Option<Vec<&str>>) {
 
   println!("init project data success, {:?}", javascript_file);
 
-  // let insert_file_refs: Vec<(u64, u64, String)> = Vec::new();
+  let mut insert_file_refs: Vec<(
+    // file_id
+    u64,
+    // ref_id
+    u64,
+    // module
+    &str,
+    // ref_type
+    &str,
+  )> = Vec::new();
 
-  // for key in javascript_file.files.keys() {
-  //   let file = javascript_file.files.get(key).unwrap();
-  //   let file_id = file.id;
+  for (_, value) in javascript_file.files.iter() {
+    let file_id = value.id;
 
-  //   for import in file.imports.keys() {
-  //     let import_file = javascript_file.files.get(import).unwrap();
-  //     let import_file_id = import_file.id;
-  //     let import_modules = file.imports.get(import).unwrap();
+    for (module_key, modules) in value.imports.module.iter() {
+      modules.iter().for_each(|module| {
+        if let Some(file) = javascript_file.files.get(module_key) {
+          insert_file_refs.push((file_id, file.id, module, "file_module"));
+        }
+      });
+    }
 
-  //     // for import_module in import_modules {
-  //     //   let import_module_id = with_auto_paths_file.npm_pkgs.get(import_module).unwrap().id;
+    for (module_key, modules) in value.imports.npm_pkg.iter() {
+      modules.iter().for_each(|module| {
+        if let Some(module_id) = javascript_file.npm_pkgs.get(module_key) {
+          insert_file_refs.push((file_id, *module_id, module, "npm_module"));
+        }
+      });
+    }
 
-  //     //   insert_file_refs.push((file_id, import_module_id, import_module.to_string()));
-  //     // }
+    for (module_key, modules) in value.imports.file.iter() {
+      modules.iter().for_each(|module| {
+        if let Some(file) = javascript_file.files.get(module_key) {
+          insert_file_refs.push((file_id, file.id, module, "others"));
+        }
+      });
+    }
+  }
 
-  //     println!("{} -> {} -> {:?}", key, import, import_modules);
-  //   }
-  // }
+  if !insert_file_refs.is_empty() {
+    block_on(init_base::insert_file_references(insert_file_refs)).unwrap();
+  }
+
+  println!("init project data success");
 }

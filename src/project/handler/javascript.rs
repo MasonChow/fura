@@ -8,8 +8,9 @@ const EXTENSIONS: [&str; 6] = ["js", "jsx", "ts", "tsx", "cjs", "mjs"];
 
 #[derive(Debug)]
 pub struct FileImports {
-  pub file: HashMap<String, Vec<String>>,
+  pub module: HashMap<String, Vec<String>>,
   pub npm_pkg: HashMap<String, Vec<String>>,
+  pub file: HashMap<String, Vec<String>>,
 }
 
 #[derive(Debug)]
@@ -133,8 +134,9 @@ fn auto_compete_import_path(
   alias: &Option<HashMap<&str, &str>>,
 ) -> FileImports {
   let mut result = FileImports {
-    file: HashMap::new(),
+    module: HashMap::new(),
     npm_pkg: HashMap::new(),
+    file: HashMap::new(),
   };
 
   // 遍历 imports 处理依赖路径
@@ -161,15 +163,22 @@ fn auto_compete_import_path(
       &project_files.keys().map(|s| s.as_str()).collect(),
     ) {
       result
-        .file
+        .module
         .insert(deps_real_path.to_string(), import_modules.clone());
       continue;
     }
 
-    println!(
-      "un match -> check npm pkg {:?} {:?}",
-      &deps_path, &file_path
-    );
+    // 如果是 npm 包，则进行匹配
+    if project_npm_pkgs.contains_key(&deps_path) {
+      result
+        .npm_pkg
+        .insert(deps_path.to_string(), import_modules.clone());
+      continue;
+    }
+
+    result
+      .file
+      .insert(deps_path.to_string(), import_modules.clone());
   }
 
   result
@@ -186,7 +195,7 @@ fn resolve_import_file_path(
   let mut deps_real_url = Url::parse(&url).expect("解析失败");
 
   // 如果是相对路径则进行拼接
-  if import_path.starts_with("./") || import_path.starts_with("../") {
+  if import_path.starts_with("./") || import_path.starts_with("../") || import_path.eq(".") {
     deps_real_url = deps_real_url.join(import_path).unwrap();
   }
   // 如果是绝对路径则直接转成 URL

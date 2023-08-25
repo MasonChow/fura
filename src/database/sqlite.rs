@@ -24,6 +24,13 @@ pub struct NpmPkg {
   pub pkg_type: String,
 }
 
+pub struct FileRefs<'a> {
+  pub file_id: u64,
+  pub ref_id: u64,
+  pub ref_type: &'a str,
+  pub module: &'a str,
+}
+
 pub fn init() -> Result<()> {
   let init_table_sql = include_str!("./sql/init_table.sql");
 
@@ -87,5 +94,24 @@ pub async fn insert_npm_pkg(npm_pkg: NpmPkg) {
   match result {
     Ok(_) => println!("insert npm_pkg success: {}", &npm_pkg.name),
     Err(err) => panic!("insert npm_pkg failed: {}", err),
+  };
+}
+
+pub async fn insert_file_reference(file_refs: FileRefs<'_>) {
+  let conn = get_db().unwrap();
+
+  let result = conn.execute(
+    "INSERT INTO file_reference (file_id, ref_id, ref_type, module) VALUES (?1, ?2, ?3, ?4)",
+    (
+      &file_refs.file_id,
+      &file_refs.ref_id,
+      &file_refs.ref_type,
+      &file_refs.module,
+    ),
+  );
+
+  match result {
+    Ok(_) => println!("insert file_refs success"),
+    Err(err) => panic!("insert file_refs failed: {}", err),
   };
 }
