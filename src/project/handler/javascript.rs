@@ -184,6 +184,18 @@ fn auto_compete_import_path(
   result
 }
 
+/*
+解析 import 语句的路径，返回真实的文件路径
+
+参数:
+
+- import_path：导入路径。
+- file_path：当前文件的路径。
+- project_files：包含了项目中所有的文件的路径的 HashSet。
+
+返回：Option<String>
+*/
+
 fn resolve_import_file_path(
   import_path: &str,
   file_path: &str,
@@ -263,41 +275,53 @@ fn resolve_import_file_path(
 mod tests {
 
   use super::*;
+  use pretty_assertions::assert_eq;
 
-  #[test]
-  fn test_resolve_import_file_path() {
-    let mut project_files = HashSet::new();
+  // 初始化测试数据
+  fn get_project_files() -> (&'static str, HashSet<&'static str>) {
+    let mut project_files: HashSet<&str> = HashSet::new();
+    let target_file = "/root/src/index.js";
 
+    // 初始化数据
     project_files.insert("/root/src/a/b.js");
     project_files.insert("/root/src/a/b/index.js");
     project_files.insert("/root/src/a.js");
     project_files.insert("/root/src/c.tsx");
+    project_files.insert("/root/src/c.ts");
+    project_files.insert("/root/src/c.js");
+    project_files.insert("/root/src/c.jsx");
+    project_files.insert("/root/src/d.jsx");
+    project_files.insert("/root/src/d.ts");
+    project_files.insert("/root/src/d.tsx");
     project_files.insert("/root/src/d/index.tsx");
     project_files.insert("/root/src/index.js");
 
-    assert_eq!(
-      resolve_import_file_path("./c", "/root/src/index.js", &project_files),
-      Some("/root/src/c.tsx".to_string())
-    );
+    return (target_file, project_files);
+  }
 
-    assert_eq!(
-      resolve_import_file_path("./d", "/root/src/index.js", &project_files),
-      Some("/root/src/d/index.tsx".to_string())
-    );
+  #[test]
+  fn test_resolve_import_file_path() {
+    println!("测试 import 语句路径解析函数 resolve_import_file_path");
 
-    assert_eq!(
-      resolve_import_file_path("lodash", "/root/src/index.js", &project_files),
-      None
-    );
+    let (target_file, project_files) = get_project_files();
 
-    assert_eq!(
-      resolve_import_file_path("./a/b", "/root/src/index.js", &project_files),
-      Some("/root/src/a/b.js".to_string())
-    );
+    let assert_fn = |input: &str, output: Option<String>| {
+      let result = resolve_import_file_path(input, target_file, &project_files);
+      assert_eq!(
+        result,
+        output,
+        "引用路径 {} 测试不通过，期望 {}，实际 {}",
+        input,
+        output.clone().unwrap_or("None".to_string()),
+        result.clone().unwrap_or("None".to_string())
+      );
+    };
 
-    assert_eq!(
-      resolve_import_file_path("./a", "/root/src/index.js", &project_files),
-      Some("/root/src/a.js".to_string())
-    );
+    // 相对路径解析，不带后缀名，有匹配文件，返回匹配文件路径，优先返回 js
+    assert_fn("./c", Some("/root/src/c.js".to_string()));
+    assert_fn("./d", Some("/root/src/d/index.tsx".to_string()));
+    assert_fn("lodash", None);
+    assert_fn("./a/b", Some("/root/src/a/b.js".to_string()));
+    assert_fn("./a", Some("/root/src/a.js".to_string()));
   }
 }
