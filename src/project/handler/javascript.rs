@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use url::Url;
 
-const EXTENSIONS: [&str; 6] = ["js", "jsx", "ts", "tsx", "cjs", "mjs"];
+const EXTENSIONS: [&str; 4] = ["js", "ts", "jsx", "tsx"];
 
 #[derive(Debug)]
 pub struct FileImports {
@@ -226,45 +226,75 @@ fn resolve_import_file_path(
     deps_real_url = Url::parse(&url).unwrap();
   }
 
-  let is_real_file = |match_path: &str| -> bool {
+  let deps_real_path: PathBuf = deps_real_url.to_file_path().unwrap();
+
+  // 检查是否存在匹配的文件
+  if let Some(match_with_rule) =
+    auto_match_project_file_by_import_path(&deps_real_path, project_files)
+  {
+    return Some(match_with_rule);
+  }
+
+  None
+}
+
+/*
+参考 node 匹配规格，自动补全文件后缀匹配
+
+> 需要传入绝对路径
+
+EXAMPLE:
+
+project_files:
+
+- /a/b.js
+- /a/c/index.js
+- /a.js
+- /a.tsx
+- /a.ts
+
+import_path & result:
+
+- /a/b.js -> /a/b.js
+- /a/b -> /a/b.js
+- /a/c -> /a/c/index.js
+- /a/c.js -> None
+- /a.ts -> /a.ts
+- /a -> /a.js
+
+*/
+fn auto_match_project_file_by_import_path(
+  import_path: &PathBuf,
+  project_files: &HashSet<&str>,
+) -> Option<String> {
+  // 判断文件是否存在项目内
+  let is_match = |match_path: &str| -> bool {
     return project_files.contains(match_path);
   };
 
-  let deps_real_path: PathBuf = deps_real_url.to_file_path().unwrap();
-
-  // 如果是真实文件则返回
-  if deps_real_path.extension().is_some() && is_real_file(&deps_real_path.to_str().unwrap()) {
-    return Some(deps_real_path.to_str().unwrap().to_string());
+  if import_path.extension().is_some() && is_match(import_path.to_str().unwrap()) {
+    return Some(import_path.to_str().unwrap().to_string());
   }
 
   // 尝试补充后缀名进行匹配
   for ext in EXTENSIONS {
-    if deps_real_path.extension().is_some() {
-      continue;
-    }
-
-    let mut test_file_path = deps_real_path.clone();
-
+    let mut test_file_path = import_path.clone();
     test_file_path.set_extension(ext);
+    let test_file_path_str = test_file_path.to_str().unwrap();
 
-    // 如果是真实文件则返回
-    if is_real_file(&test_file_path.to_str().unwrap()) {
-      return Some(test_file_path.to_str().unwrap().to_string());
+    if is_match(test_file_path_str) {
+      return Some(test_file_path_str.to_string());
     }
   }
 
+  // 尝试补充 index 进行匹配
   for ext in EXTENSIONS {
-    if deps_real_path.extension().is_some() {
-      continue;
-    }
-
-    let mut test_file_path = deps_real_path.clone().join("index");
-
+    let mut test_file_path = import_path.clone().join("index");
     test_file_path.set_extension(ext);
+    let test_file_path_str = test_file_path.to_str().unwrap();
 
-    // 如果是真实文件则返回
-    if is_real_file(&test_file_path.to_str().unwrap()) {
-      return Some(test_file_path.to_str().unwrap().to_string());
+    if is_match(test_file_path_str) {
+      return Some(test_file_path_str.to_string());
     }
   }
 
@@ -282,21 +312,73 @@ mod tests {
     let mut project_files: HashSet<&str> = HashSet::new();
     let target_file = "/root/src/index.js";
 
-    // 初始化数据
-    project_files.insert("/root/src/a/b.js");
-    project_files.insert("/root/src/a/b/index.js");
-    project_files.insert("/root/src/a.js");
-    project_files.insert("/root/src/c.tsx");
-    project_files.insert("/root/src/c.ts");
-    project_files.insert("/root/src/c.js");
-    project_files.insert("/root/src/c.jsx");
-    project_files.insert("/root/src/d.jsx");
-    project_files.insert("/root/src/d.ts");
-    project_files.insert("/root/src/d.tsx");
-    project_files.insert("/root/src/d/index.tsx");
-    project_files.insert("/root/src/index.js");
+    // 优先级匹配场景数据 1
+    project_files.insert("/root/a.js");
+    project_files.insert("/root/a.ts");
+    project_files.insert("/root/a.tsx");
+    project_files.insert("/root/a.jsx");
+
+    // index 匹配场景数据
+    project_files.insert("/root/b/index.ts");
+    project_files.insert("/root/b/index.tsx");
+    project_files.insert("/root/b/index.js");
+    project_files.insert("/root/b/index.jsx");
+
+    // 优先级匹配场景数据 2
+    project_files.insert("/root/c.ts");
+    project_files.insert("/root/c.jsx");
+    project_files.insert("/root/c.tsx");
+
+    // 优先级匹配场景数据 3
+    project_files.insert("/root/d.jsx");
+    project_files.insert("/root/d.tsx");
+
+    // 混合 index 优先级匹配场景数据
+    project_files.insert("/root/e.js");
+    project_files.insert("/root/e.ts");
+    project_files.insert("/root/e/index.js");
+    project_files.insert("/root/e/index.ts");
 
     return (target_file, project_files);
+  }
+
+  #[test]
+  fn test_auto_match_project_file_by_import_path() {
+    println!("测试 自动补全文件后缀匹配 resolve_import_file_path");
+    let (_, project_files) = get_project_files();
+
+    let assert_fn = |input: &PathBuf, output: Option<String>| {
+      let result = auto_match_project_file_by_import_path(input, &project_files);
+      assert_eq!(
+        result,
+        output,
+        "引用路径 {} 测试不通过，期望 {}，实际 {}",
+        input.to_str().unwrap(),
+        output.clone().unwrap_or("None".to_string()),
+        result.clone().unwrap_or("None".to_string())
+      );
+    };
+
+    // 测试匹配优先级是否正常
+    assert_fn(&PathBuf::from("/root/a"), Some("/root/a.js".to_string()));
+    assert_fn(&PathBuf::from("/root/c"), Some("/root/c.ts".to_string()));
+    assert_fn(&PathBuf::from("/root/d"), Some("/root/d.jsx".to_string()));
+    assert_fn(&PathBuf::from("/root/e"), Some("/root/e.js".to_string()));
+    assert_fn(&PathBuf::from("/root/f"), None);
+
+    // 测试匹配 index 是否正常
+    assert_fn(
+      &PathBuf::from("/root/b"),
+      Some("/root/b/index.js".to_string()),
+    );
+
+    // 测试固定路径下的场景
+    assert_fn(&PathBuf::from("/root/a.ts"), Some("/root/a.ts".to_string()));
+    assert_fn(
+      &PathBuf::from("/root/b/index.ts"),
+      Some("/root/b/index.ts".to_string()),
+    );
+    assert_fn(&PathBuf::from("/root/b.ts"), None);
   }
 
   #[test]
