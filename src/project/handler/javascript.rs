@@ -1,35 +1,57 @@
 use crate::database::sqlite;
 use crate::parser;
+use serde::Serialize;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use url::Url;
 
 const EXTENSIONS: [&str; 4] = ["js", "ts", "jsx", "tsx"];
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
+/// 文件导入结构体
 pub struct FileImports {
+  /// js 文件模块依赖
   pub module: HashMap<String, Vec<String>>,
+  /// 导入 npm 包依赖
   pub npm_pkg: HashMap<String, Vec<String>>,
+  /// 其他文件依赖
   pub file: HashMap<String, Vec<String>>,
 }
 
 #[derive(Debug)]
+/// 文件结构体
 pub struct File {
+  /// 文件 ID
   pub id: u64,
+  /// 文件路径
   pub path: String,
-  // pub source_imports: HashMap<String, Vec<String>>,
-  // pub import_file_map: Option<HashMap<String, Vec<String>>>,
-  // pub import_npm_map: Option<HashMap<String, Vec<String>>>,
+  /// 文件导入信息
   pub imports: FileImports,
 }
 
 #[derive(Debug)]
+/// 项目 JavaScript 数据信息
 pub struct ProjectJavascriptDataInfo {
+  /// 项目内所有 js 文件信息
   pub files: HashMap<String, File>,
+  /// 项目内所有 npm 包信息
   pub npm_pkgs: HashMap<String, u64>,
 }
 
 impl ProjectJavascriptDataInfo {
+  /// 创建一个新的 `ProjectJavascriptDataInfo` 实例。
+  ///
+  /// @example
+  /// ```rust
+  ///  use fura::project::handler::javascript;
+  ///  use std::collections::HashMap;
+  ///  let mut alias: HashMap<&str, &str> = HashMap::new();
+  ///  alias.insert("@", "/root");
+  ///  let javascript_info:javascript::ProjectJavascriptDataInfo = javascript::ProjectJavascriptDataInfo::new(&Some(alias));
+  ///  println!("init project data success, {:?}", javascript_info);
+  /// ```
+  /// - @param alias 别名
+  /// - @returns `ProjectJavascriptDataInfo` 实例。
   pub fn new(alias: &Option<HashMap<&str, &str>>) -> Self {
     let js_file_map = query_js_files().unwrap();
     let npm_pkgs = query_npm_pkgs().unwrap();
@@ -57,6 +79,18 @@ impl ProjectJavascriptDataInfo {
     }
 
     ProjectJavascriptDataInfo { files, npm_pkgs }
+  }
+
+  pub fn to_json(&self) -> serde_json::Value {
+    let mut json = serde_json::json!({});
+    for (key, value) in &self.files {
+      json[key] = serde_json::json!({
+        "id": value.id,
+        "path": value.path,
+        "imports": value.imports,
+      });
+    }
+    json
   }
 }
 
@@ -339,6 +373,10 @@ mod tests {
     project_files.insert("/root/e/index.js");
     project_files.insert("/root/e/index.ts");
 
+    // 其他文件夹匹配
+    project_files.insert("/root/f/a.js");
+    project_files.insert("/root/f/b/index.js");
+
     return (target_file, project_files);
   }
 
@@ -400,10 +438,10 @@ mod tests {
     };
 
     // 相对路径解析，不带后缀名，有匹配文件，返回匹配文件路径，优先返回 js
-    assert_fn("./c", Some("/root/src/c.js".to_string()));
-    assert_fn("./d", Some("/root/src/d/index.tsx".to_string()));
+    assert_fn("../c", Some("/root/c.ts".to_string()));
+    assert_fn("../b", Some("/root/b/index.js".to_string()));
     assert_fn("lodash", None);
-    assert_fn("./a/b", Some("/root/src/a/b.js".to_string()));
-    assert_fn("./a", Some("/root/src/a.js".to_string()));
+    assert_fn("../f/a", Some("/root/f/a.js".to_string()));
+    assert_fn("../f/b", Some("/root/f/b/index.js".to_string()));
   }
 }

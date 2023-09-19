@@ -2,11 +2,16 @@ use futures::executor::block_on;
 use std::collections::HashMap;
 mod init_database;
 
+/// 处理器
 pub mod handler;
+/// 读取器
 pub mod reader;
 
+/// 项目数据
 pub struct Project {
+  /// 项目根目录
   pub root_path: String,
+  /// JavaScript 内容数据
   pub javascript: handler::javascript::ProjectJavascriptDataInfo,
 }
 
@@ -16,7 +21,7 @@ pub struct Project {
 ///
 /// * `root_path`: `root_path` 参数是一个字符串，表示项目根目录的路径。它是函数遍历项目目录并收集数据的起点。
 /// * `exclude_paths`: `exclude_paths`
-/// 参数是一个可选参数，允许您指定要从项目数据初始化过程中排除的路径列表。如果您不想排除任何路径，可以传递“None”作为此参数的值。如果您想排除特定路径，您可以
+/// 参数是一个可选参数，允许您指定要从项目数据初始化过程中排除的路径列表。如果您不想排除任何路径，可以传递“None”作为此参数的值。
 pub fn init_project_data(root_path: &str, exclude_paths: Option<Vec<&str>>) -> Project {
   block_on(init_database::insert_project_base_data(
     root_path,
@@ -50,6 +55,7 @@ pub fn init_project_data(root_path: &str, exclude_paths: Option<Vec<&str>>) -> P
   for (_, value) in javascript_info.files.iter() {
     let file_id = value.id;
 
+    // 处理文件类型的模块
     for (module_key, modules) in value.imports.module.iter() {
       modules.iter().for_each(|module| {
         if let Some(file) = javascript_info.files.get(module_key) {
@@ -58,6 +64,7 @@ pub fn init_project_data(root_path: &str, exclude_paths: Option<Vec<&str>>) -> P
       });
     }
 
+    // 处理 npm 类型的模块
     for (module_key, modules) in value.imports.npm_pkg.iter() {
       modules.iter().for_each(|module| {
         if let Some(module_id) = javascript_info.npm_pkgs.get(module_key) {
@@ -66,6 +73,7 @@ pub fn init_project_data(root_path: &str, exclude_paths: Option<Vec<&str>>) -> P
       });
     }
 
+    // 其他导入模块
     for (module_key, modules) in value.imports.file.iter() {
       modules.iter().for_each(|module| {
         if let Some(file) = javascript_info.files.get(module_key) {

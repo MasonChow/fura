@@ -1,7 +1,6 @@
 mod database;
 mod parser;
 mod project;
-mod utils;
 
 fn main() {
   project::init_project_data(
