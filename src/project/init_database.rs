@@ -1,6 +1,7 @@
 use crate::database;
 use crate::database::sqlite;
 use futures::future::{join, join_all};
+use tracing::{debug, error, info};
 
 use crate::project::reader::{
   Dir as ProjectDir, File as ProjectFile, PackageJson as ProjectPackageJson, Project,
@@ -9,8 +10,8 @@ use crate::project::reader::{
 // 异步执行 sql 批量插入项目数据
 pub async fn insert_project_base_data(root_path: &str, exclude_paths: Option<Vec<&str>>) {
   match database::sqlite::init() {
-    Ok(_) => println!("init db success"),
-    Err(err) => panic!("init db failed: {}", err),
+    Ok(_) => debug!("初始化数据库成功"),
+    Err(err) => error!("初始化数据库失败 {:?}", err),
   };
 
   // 创建一个“Dir”结构的新实例
@@ -23,9 +24,9 @@ pub async fn insert_project_base_data(root_path: &str, exclude_paths: Option<Vec
   );
 
   match batch_task.await {
-    (Ok(_), Ok(_)) => println!("insert project data success"),
-    (Err(err), _) => panic!("insert project dir failed: {}", err),
-    (_, Err(err)) => panic!("insert project file failed: {}", err),
+    (Ok(_), Ok(_)) => info!("写入项目基础信息完成"),
+    (Err(err), _) => error!("写入文件目录信息失败 {:?}", err),
+    (_, Err(err)) => error!("写入文件信息失败 {:?}", err),
   }
 }
 

@@ -1,9 +1,9 @@
 use futures::executor::block_on;
 use std::collections::HashMap;
-mod init_database;
-
+use tracing::{event, Level};
 /// 处理器
 pub mod handler;
+mod init_database;
 /// 读取器
 pub mod reader;
 
@@ -23,6 +23,10 @@ pub struct Project {
 /// * `exclude_paths`: `exclude_paths`
 /// 参数是一个可选参数，允许您指定要从项目数据初始化过程中排除的路径列表。如果您不想排除任何路径，可以传递“None”作为此参数的值。
 pub fn init_project_data(root_path: &str, exclude_paths: Option<Vec<&str>>) -> Project {
+  event!(Level::INFO, "初始化项目数据");
+  event!(Level::INFO, "root_path: {}", root_path);
+  event!(Level::INFO, "exclude_paths: {:?}", exclude_paths);
+
   block_on(init_database::insert_project_base_data(
     root_path,
     exclude_paths,
@@ -38,8 +42,6 @@ pub fn init_project_data(root_path: &str, exclude_paths: Option<Vec<&str>>) -> P
 
   let javascript_info: handler::javascript::ProjectJavascriptDataInfo =
     handler::javascript::ProjectJavascriptDataInfo::new(&Some(alias));
-
-  println!("init project data success, {:?}", javascript_info);
 
   let mut insert_file_refs: Vec<(
     // file_id

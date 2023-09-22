@@ -1,8 +1,6 @@
-/// 此代码定义了一个名为“sqlite”的模块，该模块提供了一个函数“execute_batch”，该函数将 SQL
-/// 查询作为字符串并使用“rusqlite”库执行它。该函数首先使用“debug_assertions”标志检查代码是否正在调试模式下编译。如果是，它将打开位于“./debug”目录中名为“.fura.db”的
-/// SQLite 数据库文件。如果没有，它将打开一个内存数据库。然后该函数在数据库连接上执行 SQL 查询并返回结果。
-pub use rusqlite::{Connection, Error, OpenFlags, Result, Statement};
+pub use rusqlite::{Connection, Result, Statement};
 use std::fs::remove_file;
+use tracing::{debug, error};
 
 pub struct Dir {
   pub name: String,
@@ -40,13 +38,17 @@ pub fn init() -> Result<()> {
     remove_file(&cache_path).unwrap_or_default();
   }
 
-  return get_db()?.execute_batch(init_table_sql);
+  let conn = get_db()?;
+  conn.execute_batch(init_table_sql)?;
+  debug!("initialized database");
+  Ok(())
 }
 
 pub fn get_db() -> Result<Connection> {
   let cache_path = "./.fura/data.db";
   let conn = Connection::open(&cache_path)?;
-  return Ok(conn);
+  debug!("opened database connection");
+  Ok(conn)
 }
 
 pub async fn insert_file(file: File) {
@@ -64,8 +66,8 @@ pub async fn insert_file(file: File) {
   );
 
   match result {
-    Ok(_) => println!("insert file success: {}", &file.path),
-    Err(err) => panic!("insert file failed: {}", err),
+    Ok(_) => debug!("inserted file: {}", &file.path),
+    Err(err) => error!("failed to insert file: {}", err),
   };
 }
 
@@ -78,8 +80,8 @@ pub async fn insert_dir(dir: Dir) {
   );
 
   match result {
-    Ok(_) => println!("insert dir success: {}", &dir.path),
-    Err(err) => panic!("insert dir failed: {}", err),
+    Ok(_) => debug!("inserted dir: {}", &dir.path),
+    Err(err) => error!("failed to insert dir: {}", err),
   };
 }
 
@@ -92,8 +94,8 @@ pub async fn insert_npm_pkg(npm_pkg: NpmPkg) {
   );
 
   match result {
-    Ok(_) => println!("insert npm_pkg success: {}", &npm_pkg.name),
-    Err(err) => panic!("insert npm_pkg failed: {}", err),
+    Ok(_) => debug!("inserted npm package: {}", &npm_pkg.name),
+    Err(err) => error!("failed to insert npm package: {}", err),
   };
 }
 
@@ -111,7 +113,7 @@ pub async fn insert_file_reference(file_refs: FileRefs<'_>) {
   );
 
   match result {
-    Ok(_) => println!("insert file_refs success"),
-    Err(err) => panic!("insert file_refs failed: {}", err),
+    Ok(_) => debug!("inserted file reference"),
+    Err(err) => error!("failed to insert file reference: {}", err),
   };
 }
