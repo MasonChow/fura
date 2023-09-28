@@ -1,13 +1,14 @@
 use crate::database::sqlite;
 use crate::parser;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use url::Url;
 
 const EXTENSIONS: [&str; 4] = ["js", "ts", "jsx", "tsx"];
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 /// 文件导入结构体
 pub struct FileImports {
   /// js 文件模块依赖
@@ -18,7 +19,7 @@ pub struct FileImports {
   pub file: HashMap<String, Vec<String>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 /// 文件结构体
 pub struct File {
   /// 文件 ID
@@ -81,16 +82,15 @@ impl ProjectJavascriptDataInfo {
     ProjectJavascriptDataInfo { files, npm_pkgs }
   }
 
-  pub fn to_json(&self) -> serde_json::Value {
-    let mut json = serde_json::json!({});
+  pub fn to_json(&self) -> Result<Value, serde_json::Error> {
+    let mut file_map = HashMap::new();
     for (key, value) in &self.files {
-      json[key] = serde_json::json!({
-        "id": value.id,
-        "path": value.path,
-        "imports": value.imports,
-      });
+      file_map.insert(key, value);
     }
-    json
+
+    let value: serde_json::Value = serde_json::to_value(&file_map)?;
+
+    Ok(value)
   }
 }
 
